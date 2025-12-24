@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { hashPassword, comparePassword } from "@utils/password.js";
 import { generateToken } from "@utils/jwt.js";
 import prisma from "../prisma/client.js"
-import { Role } from "generated/prisma/index.js";
+import { Role } from "@prisma/client";
 
 export const register = async (req: Request, res: Response) => {
     try {
@@ -45,7 +45,7 @@ export const login = async (req: Request, res: Response) => {
         if (!isMatch) return res.status(400).json({ message: "Invalid password!!!" });
 
         const token = generateToken({
-            userId: user._id,
+            userId: user.id,
             role: user.role
         });
 
