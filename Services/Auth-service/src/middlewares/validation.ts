@@ -9,7 +9,6 @@ const validate = (req: Request, res: Response, next: NextFunction) => {
                 return {
                     message: err.msg
                 }
-
             })
         });
     }
