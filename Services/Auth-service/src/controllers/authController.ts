@@ -7,9 +7,9 @@ export const createUser = async (req: Request, res: Response) => {
     try {
         const { name, email, role } = req.body;
 
-        const existingUser = await prisma.user.findUnique({ where: { email } });
+        const existingUser = await prisma.user.findUnique({where: {email}});
 
-        if (existingUser) return res.status(409).json({ message: "User already exists!!!" })
+        if(existingUser) return res.status(409).json({message: "User already exists!!!"})
 
         const password = Math.random().toString(36).slice(8);
         const hashedPassword = await hashPassword(password);
@@ -20,13 +20,13 @@ export const createUser = async (req: Request, res: Response) => {
                 email,
                 password: hashedPassword,
                 role
-            }
+            }   
         });
 
         res.status(201).json({ message: `${role} created successfully.`, Credentials: { email, password: password } })
 
     } catch (error) {
-        res.status(500).json({ message: "Internal server error!!!", error });
+        res.status(500).json({ message: "Internal server error!!!",error });
     }
 }
 
@@ -55,7 +55,7 @@ export const login = async (req: Request, res: Response) => {
         res.status(200).json({ message: "User login successfull", token });
 
     } catch (error) {
-        res.status(500).json({ message: "Login failed" });
+        res.status(500).json({ message: "Login failed"});
     }
 }
 
@@ -71,18 +71,15 @@ export const changePassword = async (req: Request, res: Response) => {
             return res.status(404).json({ message: "User not found!!!" });
         }
 
-        if (user.isPasswordChanged) {
-            const isMatch = await comparePassword(oldPassword, user.password);
-            if (!isMatch) {
-                return res.status(400).json({ message: "Old password is incorrect!!!" });
-            }
+        const isMatch = await comparePassword(oldPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: "Old password is incorrect!!!" });
         }
-
 
         const hashedPassword = await hashPassword(newPassword);
 
         await prisma.user.update({
-            where: { id: userId },
+            where: {id: userId},
             data: {
                 password: hashedPassword,
                 isPasswordChanged: true
