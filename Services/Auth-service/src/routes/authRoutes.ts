@@ -5,7 +5,7 @@ import { role } from "@middlewares/role.js";
 
 const router = express.Router();
 
-router.post('/create',auth, role("ADMIN"), createUser);
+router.post('/create', auth, role("ADMIN"), createUser);
 router.post('/login', login);
 
 router.patch('/change-password', auth, changePassword);
