@@ -5,10 +5,29 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
+}
+
+model Patient {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  name              String
+  dateOfBirth       DateTime
+  gender            Gender
+  phone             String
+  emergencyContact  String?
+  medicalHistory    String?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
 }
