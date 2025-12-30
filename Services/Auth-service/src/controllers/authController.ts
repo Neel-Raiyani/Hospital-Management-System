@@ -9,9 +9,9 @@ export const createUser = async (req: Request, res: Response) => {
 
         const existingUser = await prisma.user.findUnique({where: {email}});
 
-        if(existingUser) return res.status(409).json({message: "User already exists!!!"})
+        if(existingUser) return res.status(409).json({message: "User already exists"})
 
-        const password = Math.random().toString(36).slice(8);
+        const password = Math.random().toString(36).slice(-8);
         const hashedPassword = await hashPassword(password);
 
         await prisma.user.create({
@@ -26,7 +26,7 @@ export const createUser = async (req: Request, res: Response) => {
         res.status(201).json({ message: `${role} created successfully.`, Credentials: { email, password: password } })
 
     } catch (error) {
-        res.status(500).json({ message: "Internal server error!!!",error });
+        res.status(500).json({ message: "Internal server error",error });
     }
 }
 
@@ -44,7 +44,7 @@ export const login = async (req: Request, res: Response) => {
 
         const isMatch = await comparePassword(password, user.password);
 
-        if (!isMatch) return res.status(400).json({ message: "Invalid password!!!" });
+        if (!isMatch) return res.status(400).json({ message: "Invalid password" });
 
         const token = generateToken({
             userId: user.id,
@@ -68,12 +68,12 @@ export const changePassword = async (req: Request, res: Response) => {
 
         const user = await prisma.user.findUnique({ where: { id: userId } });
         if (!user) {
-            return res.status(404).json({ message: "User not found!!!" });
+            return res.status(404).json({ message: "User not found" });
         }
 
         const isMatch = await comparePassword(oldPassword, user.password);
         if (!isMatch) {
-            return res.status(400).json({ message: "Old password is incorrect!!!" });
+            return res.status(400).json({ message: "Old password is incorrect" });
         }
 
         const hashedPassword = await hashPassword(newPassword);
@@ -88,6 +88,6 @@ export const changePassword = async (req: Request, res: Response) => {
 
         res.status(201).json({ message: "Password changed successfully" });
     } catch (error) {
-        res.status(500).json({ message: "Internal server error!!!" });
+        res.status(500).json({ message: "Internal server error" });
     }
 }

@@ -1,12 +1,11 @@
 import jwt from "jsonwebtoken";
 import { env } from "@config/env.js";
 
- interface JwtUserPayload {
+interface JwtUserPayload {
     userId: string;
     role: string;
     forcePasswordChange: boolean;
 }
-
 
 export const generateToken = (payload: JwtUserPayload) => {
     return jwt.sign(
@@ -19,4 +18,3 @@ export const generateToken = (payload: JwtUserPayload) => {
 export const verifyToken = (token: string): JwtUserPayload => {
     return jwt.verify(token, env.jwtSecret) as JwtUserPayload;
 }
-
