@@ -1,13 +1,12 @@
+import env from "@config/env.js";
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-dotenv.config();
 
 interface jwtUserPayload {
     userId: string;
     role: string;
 }
 
-const jwt_secret = process.env.JWT_SECRET as string;
+const jwt_secret = env.jwt_secret;
 
 export const generateToken = (payload: jwtUserPayload) => {
     return jwt.sign(

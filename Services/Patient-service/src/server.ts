@@ -1,10 +1,9 @@
 import express from "express";
-import dotenv from "dotenv";
-dotenv.config();
 import connectDB from "@config/db.js";
 import patientRoutes from "@routes/patientRoutes.js"
+import env from "@config/env.js";
 
-const port = process.env.PORT;
+const port = env.port;
 const app = express();
 
 connectDB();
