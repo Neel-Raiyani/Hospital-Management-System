@@ -12,7 +12,7 @@ const auth = async (req: Request, res: Response, next: NextFunction) => {
         const token = authHeader.split(" ")[1];
 
         if (!token) {
-            return res.status(401).json({ message: "Unauthorized!" });
+            return res.status(401).json({ message: "Unauthorized" });
         }
 
         const payload = verifyToken(token);

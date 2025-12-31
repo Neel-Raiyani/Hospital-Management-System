@@ -3,7 +3,7 @@ import { body } from "express-validator";
 import validate from "@middlewares/validation.js";
 import auth from "@middlewares/auth.js";
 import role from "@middlewares/role.js";
-import { createPatient, deletePatient, getPatientById, listPatients, updatePatient } from "@controllers/patientController.js";
+import { createPatient, deactivatePatient, getPatientById, listPatients, updatePatient } from "@controllers/patientController.js";
 const router = express.Router();
 
 const createValidation = [
@@ -30,6 +30,6 @@ router.get('/list', auth, role("RECEPTIONIST", "DOCTOR"), listPatients);
 router.get('/:id', auth, role("RECEPTIONIST", "DOCTOR"), getPatientById);
 
 router.patch('/update/:id', auth, role("RECEPTIONIST"), updateValidation, validate, updatePatient);
-router.patch('/delete/:id', auth, role("ADMIN"), deletePatient)
+router.patch('/deactivate/:id', auth, role("ADMIN"), deactivatePatient)
 
 export default router;

@@ -109,7 +109,7 @@ export const listPatients = async (req: Request, res: Response) => {
 
 
 
-export const deletePatient = async (req: Request, res: Response) => {
+export const deactivatePatient = async (req: Request, res: Response) => {
     try {
         const { id } = req.params as { id: string };
 
