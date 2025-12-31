@@ -1,13 +1,8 @@
 import jwt from "jsonwebtoken";
 import { env } from "@config/env.js";
+import type { AuthUserPayload } from "types/auth.js";
 
-interface JwtUserPayload {
-    userId: string;
-    role: string;
-    forcePasswordChange: boolean;
-}
-
-export const generateToken = (payload: JwtUserPayload) => {
+export const generateToken = (payload: AuthUserPayload) => {
     return jwt.sign(
         payload,
         env.jwtSecret,
@@ -15,6 +10,6 @@ export const generateToken = (payload: JwtUserPayload) => {
     );
 }
 
-export const verifyToken = (token: string): JwtUserPayload => {
-    return jwt.verify(token, env.jwtSecret) as JwtUserPayload;
+export const verifyToken = (token: string): AuthUserPayload => {
+    return jwt.verify(token, env.jwtSecret) as AuthUserPayload;
 }

@@ -64,7 +64,7 @@ export const login = async (req: Request, res: Response) => {
 export const changePassword = async (req: Request, res: Response) => {
     try {
         const { oldPassword, newPassword } = req.body;
-        const userId = req.user.userId;
+        const userId = req.user!.userId;
 
         const user = await prisma.user.findUnique({ where: { id: userId } });
         if (!user) {

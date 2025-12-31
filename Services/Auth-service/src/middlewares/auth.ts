@@ -17,9 +17,7 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
 
         const payload = verifyToken(token);
 
-        req.userId = payload.userId;
-
-        const user = await prisma.user.findUnique({ where: { id: req.userId } });
+        const user = await prisma.user.findUnique({ where: { id: payload.userId } });
 
         if (!user) {
             return res.status(401).json({ message: "User not found" });

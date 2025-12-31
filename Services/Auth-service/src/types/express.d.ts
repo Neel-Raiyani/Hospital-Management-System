@@ -1,12 +1,11 @@
-import { AuthUser } from "./auth";
+import { AuthUserPayload } from "./auth.js";
 
 declare global {
     namespace Express {
         interface Request {
-            user?: AuthUser;
-            userId?: string
+            user?: AuthUserPayload;
         }
     }
 }
 
-export {};
+export { };
