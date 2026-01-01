@@ -3,30 +3,66 @@ import { hashPassword, comparePassword } from "@utils/password.js";
 import { generateToken } from "@utils/jwt.js";
 import prisma from "../prisma/client.js"
 
+
 export const createUser = async (req: Request, res: Response) => {
     try {
-        const { name, email, role } = req.body;
+        const { name, email, role, doctorData, receptionistData } = req.body;
 
-        const existingUser = await prisma.user.findUnique({where: {email}});
+        const existingUser = await prisma.user.findUnique({ where: { email } });
 
-        if(existingUser) return res.status(409).json({message: "User already exists"})
+        if (existingUser) return res.status(409).json({ message: "User already exists" })
 
         const password = Math.random().toString(36).slice(-8);
         const hashedPassword = await hashPassword(password);
 
-        await prisma.user.create({
-            data: {
-                name,
-                email,
-                password: hashedPassword,
-                role
-            }   
+        if (role === "DOCTOR" && !doctorData) {
+            return res.status(400).json({ message: "Doctor data is required" });
+        }
+
+        if (role === "RECEPTIONIST" && !receptionistData) {
+            return res.status(400).json({ message: "Receptionist data is required" });
+        }
+
+        await prisma.$transaction(async (tx) => {
+            const user = await tx.user.create({
+                data: {
+                    name,
+                    email,
+                    password: hashedPassword,
+                    role
+                }
+            });
+
+            if (role === "DOCTOR") {
+                await tx.doctor.create({
+                    data: {
+                        userId: user.id,
+                        name,
+                        specialization: doctorData.specialization,
+                        qualification: doctorData.qualification,
+                        experienceYears: doctorData.experienceYears,
+                        opdStartTime: doctorData.opdStartTime,
+                        opdEndTime: doctorData.opdEndTime,
+                    }
+                })
+            }
+
+            if (role === "RECEPTIONIST") {
+                await tx.receptionist.create({
+                    data: {
+                        userId: user.id,
+                        name,
+                        phone: receptionistData.phone,
+                        shift: receptionistData.shift
+                    }
+                })
+            }
         });
 
-        res.status(201).json({ message: `${role} created successfully.`, Credentials: { email, password: password } })
+        res.status(201).json({ message: `${role} created successfully.`, Credentials: { email, password: password }, Doctor_Details: doctorData, Receptionist_Details: receptionistData })
 
     } catch (error) {
-        res.status(500).json({ message: "Internal server error",error });
+        res.status(500).json({ message: "Internal server error" });
     }
 }
 
@@ -55,7 +91,7 @@ export const login = async (req: Request, res: Response) => {
         res.status(200).json({ message: "User login successfull", token });
 
     } catch (error) {
-        res.status(500).json({ message: "Login failed"});
+        res.status(500).json({ message: "Login failed" });
     }
 }
 
@@ -79,7 +115,7 @@ export const changePassword = async (req: Request, res: Response) => {
         const hashedPassword = await hashPassword(newPassword);
 
         await prisma.user.update({
-            where: {id: userId},
+            where: { id: userId },
             data: {
                 password: hashedPassword,
                 isPasswordChanged: true

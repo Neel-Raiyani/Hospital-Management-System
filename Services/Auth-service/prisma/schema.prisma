@@ -13,6 +13,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  DOCTOR
+  LAB
+  RECEPTIONIST
+}
+
+enum Shift {
+  MORNING
+  EVENING
+  NIGHT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
  model User {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   name       String
@@ -25,10 +44,28 @@ datasource db {
   updatedAt  DateTime @updatedAt
 }
 
-enum Role {
-  ADMIN
-  DOCTOR
-  LAB
-  RECEPTIONIST
-  PATIENT
+
+model Doctor {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId String   @unique
+  name            String
+  specialization  String
+  qualification   String?
+  experienceYears Int?
+  opdStartTime    String
+  opdEndTime      String
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Receptionist {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @unique
+  name        String
+  phone       String?
+  shift       Shift  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
