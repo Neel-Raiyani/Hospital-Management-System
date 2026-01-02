@@ -1,0 +1,12 @@
+import type { Request, Response, NextFunction } from 'express';
+
+const role = (...allowedRoles: string[]) => {
+    return (req: Request, res: Response,next: NextFunction) => {
+        if(!req.user || !allowedRoles.includes(req.user.role)){
+            return res.status(401).json({message: "Access Denied"});
+        }
+        next();
+    }
+}
+
+export default role;
