@@ -5,9 +5,17 @@ export const createPatient = async (req: Request, res: Response) => {
     try {
         const { name, dateOfBirth, gender, phone, emergencyContact, medicalHistory } = req.body;
 
+        const counter = await prisma.counter.update({
+            where: {name: "patient"},
+            data: {
+                value: {increment: 1}
+            }
+        })
+
         const patient = await prisma.patient.create({
             data: {
                 name,
+                patientId: counter.value,
                 dateOfBirth: new Date(dateOfBirth),
                 gender,
                 phone,

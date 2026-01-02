@@ -13,8 +13,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+model Counter {
+  id    String @id @map("_id") @db.ObjectId
+  name  String @unique
+  value Int
+}
+
 model Patient {
   id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  patientId         Int      @unique
   name              String
   dateOfBirth       DateTime
   gender            Gender
@@ -26,8 +39,3 @@ model Patient {
   updatedAt         DateTime @updatedAt
 }
 
-enum Gender {
-  MALE
-  FEMALE
-  OTHER
-}
