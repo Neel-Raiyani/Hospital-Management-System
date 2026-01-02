@@ -15,14 +15,6 @@ export const createUser = async (req: Request, res: Response) => {
         const password = Math.random().toString(36).slice(-8);
         const hashedPassword = await hashPassword(password);
 
-        if (role === "DOCTOR" && !doctorData) {
-            return res.status(400).json({ message: "Doctor data is required" });
-        }
-
-        if (role === "RECEPTIONIST" && !receptionistData) {
-            return res.status(400).json({ message: "Receptionist data is required" });
-        }
-
         await prisma.$transaction(async (tx) => {
             const user = await tx.user.create({
                 data: {
