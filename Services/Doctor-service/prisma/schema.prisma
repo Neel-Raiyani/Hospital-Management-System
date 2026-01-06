@@ -27,3 +27,14 @@ model Doctor {
   updatedAt       DateTime @updatedAt
 }
 
+model OPD {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  doctorId        String   @unique
+  startTime       String
+  endTime         String
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+

@@ -7,19 +7,30 @@ export const updateDoctor = async (req: Request, res: Response) => {
 
         const { name, specialization, qualification, experienceYears, opdStartTime, opdEndTime } = req.body;
 
-        const doctor = await prisma.doctor.update({
-            where: {id},
-            data: {
-                name,
-                specialization,
-                qualification,
-                experienceYears,
-                opdStartTime,
-                opdEndTime
-            }
-        });
+        const updatedDoctor = await prisma.$transaction(async (tx) => {
+            const doctor = await tx.doctor.update({
+                where: { id },
+                data: {
+                    name,
+                    specialization,
+                    qualification,
+                    experienceYears,
+                    opdStartTime,
+                    opdEndTime
+                }
+            });
 
-        res.status(201).json({ message: "Doctor updated successfully", doctor })
+            await tx.oPD.update({
+                where: {doctorId: id},
+                data: {
+                    startTime: doctor.opdStartTime,
+                    endTime: doctor.opdEndTime
+                }
+            })
+            return doctor;
+        })
+
+        res.status(201).json({ message: "Doctor updated successfully", updatedDoctor});
 
     } catch (error) {
         res.status(500).json({ message: "Failed to update doctor" });
