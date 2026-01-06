@@ -26,7 +26,7 @@ export const createUser = async (req: Request, res: Response) => {
             });
 
             if (role === "DOCTOR") {
-                await tx.doctor.create({
+                const doctor = await tx.doctor.create({
                     data: {
                         userId: user.id,
                         name,
@@ -35,6 +35,14 @@ export const createUser = async (req: Request, res: Response) => {
                         experienceYears: doctorData.experienceYears,
                         opdStartTime: doctorData.opdStartTime,
                         opdEndTime: doctorData.opdEndTime,
+                    }
+                })
+
+                await tx.oPD.create({
+                    data: {
+                        doctorId: doctor.id,
+                        startTime: doctor.opdStartTime,
+                        endTime: doctor.opdEndTime
                     }
                 })
             }
