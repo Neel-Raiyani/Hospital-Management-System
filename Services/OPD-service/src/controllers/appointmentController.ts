@@ -118,17 +118,62 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
+        const userRole = req.user?.role;
+
+        if (!userRole) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
 
         if (!id) {
             return res.status(400).json({ message: 'Missing required parameter: id' });
         }
 
-        await prisma.appointment.update({
+        const appointment = await prisma.appointment.findUnique({
+            where: { id },
+        });
+
+        if (!appointment) {
+            return res.status(404).json({ message: 'Appointment not found' });
+        }
+
+        const finalizedStatuses = ['COMPLETED', 'CANCELLED'];
+
+        if (finalizedStatuses.includes(appointment.status)) {
+            return res.status(400).json({ message: 'Finalized appointment cannot be updated' });
+        }
+
+        const allowedTransitions: { [key: string]: string[] } = {
+            WAITING: ['LAB_TESTS', 'COMPLETED', 'CANCELLED'],
+            LAB_TESTS: ['REVIEW'],
+            REVIEW: ['COMPLETED'],
+        };
+
+        if (!allowedTransitions[appointment.status]?.includes(status)) {
+            return res.status(400).json({
+                message: `Invalid status transition from ${appointment.status} to ${status}`,
+            });
+        }
+
+        const roleStatusMap: { [role: string]: string[] } = {
+            DOCTOR: ['LAB_TESTS', 'COMPLETED'],
+            LAB: ['REVIEW'],
+            RECEPTIONIST: ['CANCELLED'],
+        };
+
+        const allowedStatuses = roleStatusMap[userRole];
+
+        if (!allowedStatuses?.includes(status)) {
+            return res.status(403).json({
+                message: `Role ${userRole} cannot change status to ${status}`,
+            });
+        }
+
+        const updatedAppointment = await prisma.appointment.update({
             where: { id },
             data: { status },
         });
 
-        res.status(200).json({ message: 'Status updated successfully' });
+        res.status(200).json({ message: 'Status updated successfully', updatedAppointment });
     } catch (error) {
         res.status(500).json({ message: 'Failed to update status', error });
     }
