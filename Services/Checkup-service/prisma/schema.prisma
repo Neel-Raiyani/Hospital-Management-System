@@ -12,3 +12,45 @@ datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
 }
+
+enum AppointmentStatus {
+  WAITING
+  LAB_TESTS
+  REVIEW         
+  COMPLETED
+  CANCELLED
+}
+
+model Checkup {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  appointmentId   String
+  patientId       String
+  doctorId        String
+  symptoms        String
+  diagnosis       String
+  doctorNotes     String?
+  labTests        LabTest[] @relation("CheckupLabTests")
+  nextFollowUp    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model LabTest {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  checkupId String
+  checkup   Checkup  @relation("CheckupLabTests", fields: [checkupId], references: [id])
+  testType  String
+
+  @@unique([checkupId, testType])
+}
+
+model Appointment {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  patientId        String
+  doctorId         String
+  tokenNumber      Int
+  appointmentDate  DateTime
+  status           AppointmentStatus  @default(WAITING)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
