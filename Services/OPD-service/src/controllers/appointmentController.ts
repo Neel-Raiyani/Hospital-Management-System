@@ -168,6 +168,21 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
             });
         }
 
+        if (userRole === 'LAB' && status === 'REVIEW') {
+            const pendingTests = await prisma.labTest.count({
+                where: {
+                    appointmentId: id,
+                    status: 'PENDING',
+                },
+            });
+
+            if (pendingTests > 0) {
+                return res.status(400).json({
+                    message: 'Cannot move to REVIEW. Pending lab tests exist.',
+                });
+            }
+        }
+
         const updatedAppointment = await prisma.appointment.update({
             where: { id },
             data: { status },

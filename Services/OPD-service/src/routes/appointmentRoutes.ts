@@ -46,7 +46,7 @@ router.get(
 router.patch(
     '/update-status/:id',
     auth,
-    role('DOCTOR', 'RECEPTIONIST'),
+    role('DOCTOR', 'RECEPTIONIST', 'LAB'),
     updateAppointmentStatusValidator,
     validate,
     updateAppointmentStatus,

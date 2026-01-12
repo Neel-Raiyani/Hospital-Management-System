@@ -21,6 +21,12 @@ enum AppointmentStatus {
   CANCELLED
 }
 
+enum LabTestStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
 model Appointment {
   id               String   @id @default(auto()) @map("_id") @db.ObjectId
   patientId        String
@@ -42,3 +48,14 @@ model OPD {
   updatedAt       DateTime @updatedAt
 }
 
+model LabTest {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  checkupId     String
+  appointmentId String
+  patientId     String
+  doctorId      String
+  testType      String
+  status        LabTestStatus
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
