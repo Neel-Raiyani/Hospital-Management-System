@@ -21,6 +21,11 @@ enum AppointmentStatus {
   CANCELLED
 }
 
+enum LabTestStatus {
+  PENDING
+  COMPLETED
+}
+
 model Checkup {
   id              String    @id @default(auto()) @map("_id") @db.ObjectId
   appointmentId   String
@@ -36,11 +41,17 @@ model Checkup {
 }
 
 model LabTest {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  checkupId String
-  checkup   Checkup  @relation("CheckupLabTests", fields: [checkupId], references: [id])
-  testType  String
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  checkupId     String
+  appointmentId String
+  patientId     String
+  doctorId      String
+  testType      String
+  status        LabTestStatus @default(PENDING)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
+  checkup   Checkup  @relation("CheckupLabTests", fields: [checkupId], references: [id])
   @@unique([checkupId, testType])
 }
 

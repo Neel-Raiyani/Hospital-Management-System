@@ -32,8 +32,18 @@ export const createCheckup = async (req: Request, res: Response) => {
                 diagnosis,
                 doctorNotes,
                 labTests: {
-                    create: labTests?.map((test: string) => ({ testType: test })),
+                    create: labTests?.map((test: string) => ({
+                        testType: test,
+                        appointmentId,
+                        patientId: appointment.patientId,
+                        doctorId: appointment.doctorId,
+                    })),
                 },
+            },
+            omit: {
+                createdAt: true,
+                updatedAt: true,
+                nextFollowUp: true,
             },
             include: {
                 labTests: true,
