@@ -6,7 +6,7 @@ import prisma from "../prisma/client.js"
 
 export const createUser = async (req: Request, res: Response) => {
     try {
-        const { name, email, role, doctorData, receptionistData } = req.body;
+        const { name, email, role, doctorData, receptionistData, labStaffData } = req.body;
 
         const existingUser = await prisma.user.findUnique({ where: { email } });
 
@@ -57,9 +57,20 @@ export const createUser = async (req: Request, res: Response) => {
                     }
                 })
             }
+
+            if (role === "LAB") {
+                await tx.labStaff.create({
+                    data: {
+                        userId: user.id,
+                        name,
+                        phone: labStaffData.phone,
+                        shift: labStaffData.shift
+                    }
+                })
+            }
         });
 
-        res.status(201).json({ message: `${role} created successfully.`, Credentials: { email, password: password }, Doctor_Details: doctorData, Receptionist_Details: receptionistData })
+        res.status(201).json({ message: `${role} created successfully.`, Credentials: { email, password: password }, Doctor_Details: doctorData, Receptionist_Details: receptionistData, Lab_Staff_Details: labStaffData })
 
     } catch (error) {
         res.status(500).json({ message: "Internal server error" });

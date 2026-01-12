@@ -57,6 +57,17 @@ export const createUserValidation = [
     body("receptionistData.shift")
         .if((_, { req }) => req.body.role === "RECEPTIONIST" && req.body.receptionistData)
         .notEmpty().withMessage("Shift is required")
+        .isIn(["MORNING", "EVENING", "NIGHT"]) .withMessage("Shift must be in uppercase: MORNING, EVENING, or NIGHT"),
+
+    body("labStaffData").if(body("role").equals("LAB")).notEmpty().withMessage("Lab Staff data is required"),
+
+    body("labStaffData.phone")
+        .if((_, { req }) => req.body.role === "LAB" && req.body.labStaffData)
+        .isMobilePhone("en-IN").withMessage("Valid phone number is required"),
+
+    body("labStaffData.shift")
+        .if((_, { req }) => req.body.role === "LAB" && req.body.labStaffData)
+        .notEmpty().withMessage("Shift is required")
         .isIn(["MORNING", "EVENING", "NIGHT"]) .withMessage("Shift must be in uppercase: MORNING, EVENING, or NIGHT")
 ]
 

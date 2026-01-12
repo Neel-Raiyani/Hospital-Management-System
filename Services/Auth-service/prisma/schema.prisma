@@ -47,7 +47,7 @@ enum Gender {
 
 model Doctor {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId String   @unique
+  userId          String   @unique
   name            String
   specialization  String
   qualification   String?
@@ -68,6 +68,17 @@ model Receptionist {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model LabStaff {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @unique
+  name          String
+  phone         String
+  shift         Shift
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model OPD {
