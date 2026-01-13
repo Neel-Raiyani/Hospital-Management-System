@@ -12,3 +12,34 @@ datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
 }
+
+enum AppointmentStatus {
+  WAITING
+  LAB_TEST
+  REVIEW
+  COMPLETED
+  CANCELED
+}
+
+model Prescription {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  appointmentId String  
+  patientId     String
+  doctorId      String
+
+  diagnosis     String?
+  medicines     Json     
+  instructions  String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt 
+}
+
+model Appointment {
+  id        String            @id @default(auto()) @map("_id") @db.ObjectId
+  patientId String
+  doctorId  String
+  status    AppointmentStatus
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+}
