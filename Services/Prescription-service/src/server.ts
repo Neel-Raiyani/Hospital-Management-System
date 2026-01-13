@@ -2,11 +2,13 @@ import express from 'express';
 import prescriptionRoutes from '@routes/prescriptionRoutes.js';
 import env from '@config/env.js';
 import connectDB from '@config/db.js';
+import { setupSwagger } from '@config/swagger.js';
 
 const app = express();
 const port = env.port;
 
 connectDB();
+setupSwagger(app);
 
 app.use(express.json());
 
