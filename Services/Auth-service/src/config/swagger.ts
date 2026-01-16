@@ -12,7 +12,7 @@ export const swaggerSpec = swaggerJSDoc({
         },
         servers: [
             {
-                url: 'http://localhost:4018',
+                url: 'https://auth-service-4omj.onrender.com/',
             },
         ],
         components: {
