@@ -12,7 +12,7 @@ export const swaggerSpec = swaggerJSDoc({
         },
         servers: [
             {
-                url: 'http://localhost:5018',
+                url: 'https://patient-service-xt4w.onrender.com',
             },
         ],
         components: {
