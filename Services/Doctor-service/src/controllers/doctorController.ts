@@ -1,11 +1,14 @@
 import type { Request, Response } from "express";
 import prisma from "prisma/client.js";
+import logger from "@utils/logger.js";
 
 export const updateDoctor = async (req: Request, res: Response) => {
     try {
         const { id } = req.params as { id: string };
 
         const { name, specialization, qualification, experienceYears, opdStartTime, opdEndTime } = req.body;
+
+        logger.info(`Update doctor request | doctorId=${id}`);
 
         const updatedDoctor = await prisma.$transaction(async (tx) => {
             const doctor = await tx.doctor.update({
@@ -28,11 +31,18 @@ export const updateDoctor = async (req: Request, res: Response) => {
                 }
             })
             return doctor;
-        })
+        });
+
+        logger.info(
+            `Doctor updated successfully | doctorId=${id} | opdStart=${updatedDoctor.opdStartTime} | opdEnd=${updatedDoctor.opdEndTime}`
+        );
+
 
         res.status(201).json({ message: "Doctor updated successfully", updatedDoctor});
 
     } catch (error) {
+        logger.error(`Update doctor error | error=${(error as Error).message}`);
+
         res.status(500).json({ message: "Failed to update doctor" });
     }
 }
@@ -41,10 +51,16 @@ export const updateDoctor = async (req: Request, res: Response) => {
 
 export const getDoctors = async (req: Request, res: Response) => {
     try {
+        logger.info('Fetch active doctors request');
         const doctors = await prisma.doctor.findMany({ where: { isActive: true } });
 
+        logger.info(`Doctors fetched successfully | count=${doctors.length}`);
         res.status(200).json(doctors);
     } catch (error) {
+        logger.error(
+            `Update doctor error | error=${(error as Error).message}`
+        );
+        logger.error(`Fetch doctors error | error=${(error as Error).message}`);
         res.status(500).json({ message: "Failed to fetch doctors" });
     }
 }
@@ -55,6 +71,8 @@ export const getDoctorById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params as { id: string };
 
+        logger.info(`Fetch doctor by ID request | doctorId=${id}`);
+
         const doctor = await prisma.doctor.findUnique({
             where: { id }
         });
@@ -63,8 +81,12 @@ export const getDoctorById = async (req: Request, res: Response) => {
             return res.status(404).json({ message: "Doctor not found" });
         }
 
+        logger.info(`Doctor fetched successfully | doctorId=${id}`);
+        
         res.json(doctor);
     } catch (error) {
+        logger.error(`Fetch doctor error | error=${(error as Error).message}`);
+
         res.status(500).json({ message: "Failed to fetch doctor" });
     }
 }
@@ -75,13 +97,19 @@ export const deactivateDoctor = async (req: Request, res: Response) => {
     try {
         const { id } = req.params as { id: string };
 
+        logger.info(`Deactivate doctor request | doctorId=${id}`);
+
         await prisma.doctor.update({
             where: { id },
             data: { isActive: false }
         });
 
+        logger.info(`Doctor deactivated successfully | doctorId=${id}`);
+
         res.json({ message: "Doctor deactivated" });
     } catch (error) {
+        logger.error(`Deactivate doctor error | error=${(error as Error).message}`);
+
         res.status(500).json({ message: "Failed to deactivate doctor" });
     }
 };

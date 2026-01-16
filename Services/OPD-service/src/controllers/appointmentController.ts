@@ -1,9 +1,12 @@
 import type { Request, Response } from 'express';
 import prisma from 'prisma/client.js';
+import logger from '@utils/logger.js';
 
 export const bookAppointment = async (req: Request, res: Response) => {
     try {
         const { patientId, doctorId } = req.body;
+
+        logger.info(`Book appointment request | patientId=${patientId} | doctorId=${doctorId}`);
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -63,8 +66,14 @@ export const bookAppointment = async (req: Request, res: Response) => {
             },
         });
 
+        logger.info(
+            `Appointment booked successfully | appointmentId=${appointment.id} | tokenNumber=${nextToken}`,
+        );
+
         res.status(201).json({ message: 'Appointment booked successfully', appointment });
     } catch (error) {
+        logger.error(`Book appointment error | error=${(error as Error).message}`);
+
         res.status(500).json({ message: 'Failed to book appointment', error });
     }
 };
@@ -81,6 +90,10 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
         const appointmentDate = date ? new Date(date as string) : new Date();
         appointmentDate.setHours(0, 0, 0, 0);
 
+        logger.info(
+            `Fetch doctor appointments request | doctorId=${doctorId} | date=${appointmentDate.toISOString()}`,
+        );
+
         const appointments = await prisma.appointment.findMany({
             where: {
                 doctorId,
@@ -90,8 +103,14 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
             orderBy: { tokenNumber: 'asc' },
         });
 
+        logger.info(
+            `Doctor appointments fetched | doctorId=${doctorId} | count=${appointments.length}`,
+        );
+
         res.status(200).json(appointments);
     } catch (error) {
+        logger.error(`Fetch doctor appointments error | error=${(error as Error).message}`);
+
         res.status(500).json({ message: 'Failed to fetch doctor appointments', error });
     }
 };
@@ -99,6 +118,8 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
 export const getPatientappointments = async (req: Request, res: Response) => {
     try {
         const { patientId } = req.params;
+
+        logger.info(`Fetch patient appointments request | patientId=${patientId}`);
 
         if (!patientId) {
             return res.status(400).json({ message: 'Missing required parameter: patientId' });
@@ -108,8 +129,15 @@ export const getPatientappointments = async (req: Request, res: Response) => {
             where: { patientId },
             orderBy: { createdAt: 'desc' },
         });
+
+        logger.info(
+            `Patient appointments fetched | patientId=${patientId} | count=${appointments.length}`,
+        );
+
         res.status(200).json(appointments);
     } catch (error) {
+        logger.error(`Fetch patient appointments error | error=${(error as Error).message}`);
+
         res.status(500).json({ message: 'Failed to fetch patient appointments', error });
     }
 };
@@ -119,6 +147,10 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
         const { id } = req.params;
         const { status } = req.body;
         const userRole = req.user?.role;
+
+        logger.info(
+            `Update appointment status request | appointmentId=${id} | requestedStatus=${status} | role=${userRole}`,
+        );
 
         if (!userRole) {
             return res.status(401).json({ message: 'Unauthorized' });
@@ -188,8 +220,14 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
             data: { status },
         });
 
+        logger.info(
+            `Appointment status updated successfully | appointmentId=${id} | newStatus=${status}`,
+        );
+
         res.status(200).json({ message: 'Status updated successfully', updatedAppointment });
     } catch (error) {
+        logger.error(`Update appointment status error | error=${(error as Error).message}`);
+
         res.status(500).json({ message: 'Failed to update status', error });
     }
 };

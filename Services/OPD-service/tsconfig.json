@@ -47,5 +47,5 @@
         "skipLibCheck": true
     },
     "include": ["src/**/*"],
-    "exclude": ["dist", "node_modules", "prima.config.ts", "prisma/**/*"]
+    "exclude": ["dist", "node_modules", "logs", "prima.config.ts", "prisma/**/*"]
 }

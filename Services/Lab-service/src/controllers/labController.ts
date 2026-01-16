@@ -3,15 +3,22 @@ import prisma from 'prisma/client.js';
 import fs from 'fs';
 import path from 'path';
 import archiver from 'archiver';
+import logger from '@utils/logger.js';
 
 export const getPendingLabTests = async (req: Request, res: Response) => {
     try {
+        logger.info('Fetch pending lab tests request');
+
         const tests = await prisma.labTest.findMany({
             where: { status: 'PENDING' },
         });
 
+        logger.info(`Pending lab tests fetched | count=${tests.length}`);
+
         res.json(tests);
     } catch (error) {
+        logger.error(`Fetch pending lab tests error | error=${(error as Error).message}`);
+
         res.status(500).json({ message: 'Unable to fetch pending labtests', error });
     }
 };
@@ -21,6 +28,8 @@ export const createLabReport = async (req: Request, res: Response) => {
         const { labTestId } = req.body;
         const files = req.files as Express.Multer.File[];
         const userId = req.user?.userId as string;
+
+        logger.info(`Create lab report request | labTestId=${labTestId} | uploadedBy=${userId}`);
 
         if (!files || files.length === 0) {
             return res.status(400).json({ message: 'At least one PDF report required' });
@@ -70,8 +79,13 @@ export const createLabReport = async (req: Request, res: Response) => {
             return pending;
         });
 
+        logger.info(
+            `Lab report created | labTestId=${labTestId} | files=${files.length} | pendingTests=${count}`,
+        );
+
         res.status(201).json({ message: 'Lab report created successfully', Pending_tests: count });
     } catch (error) {
+        logger.error(`Create lab report error | error=${(error as Error).message}`);
         res.status(500).json({ message: 'Failed to create lab report', error });
     }
 };
@@ -80,6 +94,8 @@ export const updateLabReport = async (req: Request, res: Response) => {
     try {
         const { reportId } = req.params;
         const files = req.files as Express.Multer.File[];
+
+        logger.info(`Update lab report request | reportId=${reportId}`);
 
         if (!reportId) {
             return res.status(400).json({ message: 'Missing required parameter: reportId' });
@@ -112,29 +128,46 @@ export const updateLabReport = async (req: Request, res: Response) => {
             },
         });
 
+        logger.info(
+            `Lab report updated successfully | reportId=${reportId} | files=${files.length}`,
+        );
+
         res.json({ message: 'Lab report updated successfully' });
     } catch (error) {
+        logger.error(`Update lab report error | error=${(error as Error).message}`);
+
         res.status(500).json({ message: 'Failed to update report', error });
     }
 };
 
 export const getReportsByPatient = async (req: Request, res: Response) => {
-    const { patientId } = req.params;
+    try {
+        const { patientId } = req.params;
 
-    if (!patientId) {
-        return res.status(400).json({ message: 'Missing required parameter: patientId' });
+        logger.info(`Fetch lab reports by patient | patientId=${patientId}`);
+
+        if (!patientId) {
+            return res.status(400).json({ message: 'Missing required parameter: patientId' });
+        }
+
+        const reports = await prisma.labReport.findMany({
+            where: { patientId },
+        });
+
+        logger.info(`Lab reports fetched | patientId=${patientId} | count=${reports.length}`);
+
+        res.json(reports);
+    } catch (error) {
+        logger.error(`Fetch patient lab reports error| error=${(error as Error).message}`);
+        res.status(500).json({ message: 'Failed to fetch reports of patient', error });
     }
-
-    const reports = await prisma.labReport.findMany({
-        where: { patientId },
-    });
-
-    res.json(reports);
 };
 
 export const downloadReport = async (req: Request, res: Response) => {
     try {
         const { reportId } = req.params;
+
+        logger.info(`Download lab report request | reportId=${reportId}`);
 
         if (!reportId) {
             return res.status(400).json({ message: 'Missing required parameter: reportId' });
@@ -155,6 +188,8 @@ export const downloadReport = async (req: Request, res: Response) => {
                 return res.status(404).json({ message: 'File not found on server' });
             }
 
+            logger.info(`Single lab report downloaded | reportId=${reportId}`);
+
             return res.download(filePath as string);
         }
 
@@ -173,8 +208,14 @@ export const downloadReport = async (req: Request, res: Response) => {
             }
         }
 
+        logger.info(
+            `Multiple lab reports zipped and downloaded | reportId=${reportId} | files=${report.reportUrls.length}`,
+        );
+
         await archive.finalize();
     } catch (error) {
+        logger.error(`Download lab report error | error=${(error as Error).message}`);
+
         res.status(500).json({ message: 'Failed to download report', error });
     }
 };
@@ -182,6 +223,8 @@ export const downloadReport = async (req: Request, res: Response) => {
 export const cancelLabTest = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+
+        logger.info(`Cancel lab test request | labTestId=${id}`);
 
         if (!id) {
             return res.status(400).json({ message: 'Missing required parameter: id' });
@@ -193,8 +236,13 @@ export const cancelLabTest = async (req: Request, res: Response) => {
                 status: 'CANCELLED',
             },
         });
+
+        logger.info(`Lab test cancelled successfully | labTestId=${id}`);
+
         res.status(200).json({ message: 'Labtest cancelled' });
     } catch (error) {
+        logger.error(`Cancel lab test error | error=${(error as Error).message}`);
+
         res.status(500).json({ message: 'Failed to cancel labtest', error });
     }
 };

@@ -5,6 +5,8 @@ import env from '@config/env.js';
 import connectDB from '@config/db.js';
 import labRoutes from '@routes/labRoutes.js';
 import { setupSwagger } from '@config/swagger.js';
+import { requestLogger } from '@utils/logger.js';
+import { rateLimiter } from '@middlewares/rateLimiter.js';
 
 const app = express();
 const port = env.port;
@@ -15,7 +17,9 @@ const __dirname = path.dirname(__filename);
 connectDB();
 setupSwagger(app);
 
+app.use(rateLimiter);
 app.use(express.json());
+app.use(requestLogger);
 
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 

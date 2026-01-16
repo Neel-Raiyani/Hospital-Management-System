@@ -1,9 +1,12 @@
 import type { Request, Response } from 'express';
 import prisma from 'prisma/client.js';
+import logger from '@utils/logger.js';
 
 export const createCheckup = async (req: Request, res: Response) => {
     try {
         const { appointmentId, symptoms, diagnosis, doctorNotes, labTests } = req.body;
+
+        logger.info(`Create checkup request | appointmentId=${appointmentId}`);
 
         const appointment = await prisma.appointment.findUnique({
             where: { id: appointmentId },
@@ -50,8 +53,14 @@ export const createCheckup = async (req: Request, res: Response) => {
             },
         });
 
+        logger.info(
+            `Checkup created successfully | appointmentId=${appointmentId} | doctorId=${appointment.doctorId}`,
+        );
+
         res.status(201).json({ message: 'Checkup created', checkup });
     } catch (error) {
+        logger.error(`Create checkup error | error=${(error as Error).message}`);
+
         res.status(500).json({ message: 'Failed to create checkup', error });
     }
 };
@@ -60,6 +69,8 @@ export const updateCheckup = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const { symptoms, diagnosis, doctorNotes, labTests } = req.body;
+
+        logger.info(`Update checkup request | checkupId=${id}`);
 
         if (!id) {
             return res.status(400).json({ message: 'Missing required parameter: id' });
@@ -99,8 +110,10 @@ export const updateCheckup = async (req: Request, res: Response) => {
             }
         }
 
+        logger.info(`Checkup updated successfully | checkupId=${id}`);
         res.json({ message: 'Checkup updated successfully' });
     } catch (error) {
+        logger.error(`Update checkup error | error=${(error as Error).message}`);
         res.status(500).json({ message: 'Failed to update checkup', error });
     }
 };
@@ -108,6 +121,8 @@ export const updateCheckup = async (req: Request, res: Response) => {
 export const getPatientCheckups = async (req: Request, res: Response) => {
     try {
         const { patientId } = req.params;
+
+        logger.info(`Fetch patient checkups | patientId=${patientId}`);
 
         if (!patientId) {
             return res.status(400).json({ message: 'Missing required parameter: patientId' });
@@ -119,8 +134,14 @@ export const getPatientCheckups = async (req: Request, res: Response) => {
             include: { labTests: true },
         });
 
+        logger.info(
+            `Checkups fetched successfully | patientId=${patientId} | count=${checkups.length}`,
+        );
+
         res.json({ checkups });
     } catch (error) {
+        logger.error(`Fetch checkups error | error=${(error as Error).message}`);
+
         res.status(500).json({ message: 'Failed to fetch checkups', error });
     }
 };
@@ -129,6 +150,8 @@ export const updateFollowUp = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const { nextFollowUp } = req.body;
+
+        logger.info(`Update follow-up request | checkupId=${id}`);
 
         const followupDate = new Date(nextFollowUp);
 
@@ -141,8 +164,14 @@ export const updateFollowUp = async (req: Request, res: Response) => {
             data: { nextFollowUp: followupDate },
         });
 
+        logger.info(
+            `Follow-up date updated | checkupId=${id} | nextFollowUp=${followupDate.toISOString()}`,
+        );
+
         res.json({ message: 'Follow-up date updated', checkup });
     } catch (error) {
+        logger.error(`Update follow-up error | error=${(error as Error).message}`);
+
         res.status(500).json({ message: 'Failed to update follow-up', error });
     }
 };

@@ -3,10 +3,14 @@ import prisma from 'prisma/client.js';
 import PDFDocument from 'pdfkit';
 import type { Medicine } from 'types/medicine.js';
 import type { Prisma } from '@prisma/client';
+import logger from '@utils/logger.js';
 
 export const createPrescription = async (req: Request, res: Response) => {
     try {
         const { appointmentId, diagnosis, instructions, medicines } = req.body;
+
+        logger.info(`Create prescription request | appointmentId=${appointmentId}`);
+
         const sanitizedMedicines: Prisma.InputJsonValue = medicines.map((med: Medicine) => ({
             name: med.name,
             dose: med.dose,
@@ -46,11 +50,14 @@ export const createPrescription = async (req: Request, res: Response) => {
             },
         });
 
+        logger.info(`Prescription created successfully | appointmentId=${appointmentId}`);
+
         res.status(201).json({
             message: 'Prescription created successfully',
             created,
         });
     } catch (error) {
+        logger.error(`Create prescription error | error=${(error as Error).message}`);
         res.status(500).json({ message: 'Failed to create prescription', error });
     }
 };
@@ -58,6 +65,8 @@ export const createPrescription = async (req: Request, res: Response) => {
 export const getPrescriptionByAppointment = async (req: Request, res: Response) => {
     try {
         const { appointmentId } = req.params as { appointmentId: string };
+
+        logger.info(`Fetch prescription by appointment | appointmentId=${appointmentId}`);
 
         const prescription = await prisma.prescription.findFirst({
             where: { appointmentId: appointmentId },
@@ -67,8 +76,13 @@ export const getPrescriptionByAppointment = async (req: Request, res: Response) 
             return res.status(404).json({ message: 'Prescription not found' });
         }
 
+        logger.info(
+            `Prescription fetched | appointmentId=${appointmentId} | prescriptionId=${prescription.id}`,
+        );
+
         res.json(prescription);
     } catch (error) {
+        logger.error(`Fetch prescription error | error=${(error as Error).message}`);
         res.status(500).json({ message: 'Failed to fetch prescription', error });
     }
 };
@@ -76,6 +90,8 @@ export const getPrescriptionByAppointment = async (req: Request, res: Response) 
 export const getPatientPrescriptions = async (req: Request, res: Response) => {
     try {
         const { patientId } = req.params as { patientId: string };
+
+        logger.info(`Fetch patient prescriptions | patientId=${patientId}`);
 
         const prescriptions = await prisma.prescription.findMany({
             where: { patientId: patientId },
@@ -86,8 +102,13 @@ export const getPatientPrescriptions = async (req: Request, res: Response) => {
             return res.status(404).json({ message: 'Prescriptions for this patient not found' });
         }
 
+        logger.info(
+            `Patient prescriptions fetched | patientId=${patientId} | count=${prescriptions.length}`,
+        );
+
         res.json(prescriptions);
     } catch (error) {
+        logger.error(`Fetch patient prescriptions error | error=${(error as Error).message}`);
         res.status(500).json({ message: 'Failed to fetch prescriptions', error });
     }
 };
@@ -95,6 +116,8 @@ export const getPatientPrescriptions = async (req: Request, res: Response) => {
 export const exportPrescriptionPDF = async (req: Request, res: Response) => {
     try {
         const { id } = req.params as { id: string };
+
+        logger.info(`Export prescription PDF request | prescriptionId=${id}`);
 
         const prescription = await prisma.prescription.findUnique({
             where: { id },
@@ -157,8 +180,11 @@ export const exportPrescriptionPDF = async (req: Request, res: Response) => {
             .moveDown(1)
             .text('_________________________', { align: 'right' });
 
+        logger.info(`Prescription PDF exported successfully | prescriptionId=${id}`);
+
         doc.end();
     } catch (error) {
+        logger.error(`Export prescription PDF error | error=${(error as Error).message}`);
         res.status(500).json({ message: 'Failed to export prescription PDF', error });
     }
 };
@@ -167,6 +193,8 @@ export const updatePrescription = async (req: Request, res: Response) => {
     try {
         const { id } = req.params as { id: string };
         const { diagnosis, instructions, medicines } = req.body;
+
+        logger.info(`Update prescription request | prescriptionId=${id}`);
 
         const prescription = await prisma.prescription.findUnique({
             where: { id },
@@ -191,11 +219,14 @@ export const updatePrescription = async (req: Request, res: Response) => {
             },
         });
 
+        logger.info(`Prescription updated successfully | prescriptionId=${id}`);
+
         res.status(200).json({
             message: 'Prescription updated successfully',
             updatedPrescription,
         });
     } catch (error) {
+        logger.error(`Update prescription error | error=${(error as Error).message}`);
         res.status(500).json({ message: 'Failed to update prescription', error });
     }
 };
