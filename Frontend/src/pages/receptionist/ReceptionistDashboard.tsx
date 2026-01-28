@@ -106,9 +106,12 @@ const ReceptionistDashboard: React.FC = () => {
                             <Calendar className="w-5 h-5" />
                             Schedule Appointment
                         </button>
-                        <button className="w-full flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors">
-                            <Users className="w-5 h-5" />
-                            View All Patients
+                        <button
+                            onClick={() => navigate('/appointments')}
+                            className="w-full flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors"
+                        >
+                            <Calendar className="w-5 h-5" />
+                            View All Appointments
                         </button>
                     </div>
 

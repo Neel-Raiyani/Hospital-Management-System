@@ -1,7 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, Users, FileText, Clock } from 'lucide-react';
 
 const DoctorDashboard: React.FC = () => {
+    const navigate = useNavigate();
     return (
         <div>
             <h1 className="text-3xl font-bold mb-6">Doctor Dashboard</h1>
@@ -48,7 +50,12 @@ const DoctorDashboard: React.FC = () => {
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-xl font-bold">Today's Appointments</h2>
-                        <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">View All</button>
+                        <button
+                            onClick={() => navigate('/appointments')}
+                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                            View All
+                        </button>
                     </div>
                     <div className="space-y-3">
                         <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
