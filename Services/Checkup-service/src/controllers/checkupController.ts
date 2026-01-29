@@ -105,6 +105,9 @@ export const updateCheckup = async (req: Request, res: Response) => {
                     data: newTests.map((test: string) => ({
                         checkupId: id,
                         testType: test,
+                        appointmentId: checkup.appointmentId,
+                        patientId: checkup.patientId,
+                        doctorId: checkup.doctorId,
                     })),
                 });
             }
