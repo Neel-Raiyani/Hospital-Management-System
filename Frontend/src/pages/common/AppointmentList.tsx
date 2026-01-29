@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
     Calendar, RefreshCw, Loader2, ChevronRight,
-    Search, XCircle
+    Search, Stethoscope
 } from 'lucide-react';
 import { appointmentService } from '../../api/appointment.service';
 import type { Appointment, AppointmentStatus } from '../../types/appointment';
 import { useAuth } from '../../hooks/useAuth';
+import StatusUpdateModal from '../../components/appointments/StatusUpdateModal';
+import CheckupForm from '../../components/appointments/CheckupForm';
 
 const AppointmentList: React.FC = () => {
     const { user } = useAuth();
@@ -13,7 +15,8 @@ const AppointmentList: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<AppointmentStatus | 'ALL'>('ALL');
     const [searchTerm, setSearchTerm] = useState('');
-    const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+    const [checkupAppointment, setCheckupAppointment] = useState<Appointment | null>(null);
 
     const fetchAppointments = async () => {
         try {
@@ -37,18 +40,6 @@ const AppointmentList: React.FC = () => {
     useEffect(() => {
         fetchAppointments();
     }, [user?.id, user?.role]);
-
-    const handleStatusUpdate = async (id: string, newStatus: AppointmentStatus) => {
-        try {
-            setUpdatingId(id);
-            await appointmentService.updateStatus(id, newStatus);
-            await fetchAppointments();
-        } catch (error) {
-            console.error('Update failed:', error);
-        } finally {
-            setUpdatingId(null);
-        }
-    };
 
     const statusColors = {
         WAITING: 'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -101,8 +92,8 @@ const AppointmentList: React.FC = () => {
                         key={s}
                         onClick={() => setFilter(s as any)}
                         className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap border transition-all ${filter === s
-                                ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100'
-                                : 'bg-white text-gray-500 border-gray-100 hover:border-blue-200'
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100'
+                            : 'bg-white text-gray-500 border-gray-100 hover:border-blue-200'
                             }`}
                     >
                         {s.replace('_', ' ')}
@@ -164,46 +155,33 @@ const AppointmentList: React.FC = () => {
                                         <div className="text-[10px] text-indigo-500 font-bold uppercase">{app.doctor?.specialization || 'General'}</div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold border uppercase ${statusColors[app.status]}`}>
+                                        <button
+                                            onClick={() => setSelectedAppointment(app)}
+                                            className={`px-3 py-1 rounded-full text-[10px] font-bold border uppercase transition-transform hover:scale-105 active:scale-95 ${statusColors[app.status]}`}
+                                        >
                                             {app.status.replace('_', ' ')}
-                                        </span>
+                                        </button>
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-2">
-                                            {updatingId === app.id ? (
-                                                <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-                                            ) : (
-                                                <>
-                                                    {user?.role === 'DOCTOR' && app.status === 'WAITING' && (
-                                                        <>
-                                                            <button
-                                                                onClick={() => handleStatusUpdate(app.id, 'LAB_TESTS')}
-                                                                className="px-3 py-1.5 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg text-xs font-bold transition-all"
-                                                            >
-                                                                Lab Tests
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleStatusUpdate(app.id, 'COMPLETED')}
-                                                                className="px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-xs font-bold transition-all"
-                                                            >
-                                                                Complete
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                    {user?.role === 'RECEPTIONIST' && app.status === 'WAITING' && (
-                                                        <button
-                                                            onClick={() => handleStatusUpdate(app.id, 'CANCELLED')}
-                                                            className="px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
-                                                        >
-                                                            <XCircle className="w-3 h-3" />
-                                                            Cancel
-                                                        </button>
-                                                    )}
-                                                    <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 group-hover:text-blue-600 transition-all">
-                                                        <ChevronRight className="w-5 h-5" />
-                                                    </button>
-                                                </>
+                                            {user?.role === 'DOCTOR' && app.status === 'WAITING' && (
+                                                <button
+                                                    onClick={() => setCheckupAppointment(app)}
+                                                    className="px-3 py-1.5 bg-orange-50 text-orange-700 hover:bg-orange-100 rounded-lg text-xs font-black transition-all flex items-center gap-1"
+                                                >
+                                                    <Stethoscope className="w-3 h-3" />
+                                                    Checkup
+                                                </button>
                                             )}
+                                            <button
+                                                onClick={() => setSelectedAppointment(app)}
+                                                className="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                                            >
+                                                Update
+                                            </button>
+                                            <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 group-hover:text-blue-600 transition-all">
+                                                <ChevronRight className="w-5 h-5" />
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -212,6 +190,23 @@ const AppointmentList: React.FC = () => {
                     </table>
                 </div>
             </div>
+
+            {selectedAppointment && (
+                <StatusUpdateModal
+                    appointment={selectedAppointment}
+                    isOpen={!!selectedAppointment}
+                    onClose={() => setSelectedAppointment(null)}
+                    onSuccess={fetchAppointments}
+                />
+            )}
+            {checkupAppointment && (
+                <CheckupForm
+                    appointment={checkupAppointment}
+                    isOpen={!!checkupAppointment}
+                    onClose={() => setCheckupAppointment(null)}
+                    onSuccess={fetchAppointments}
+                />
+            )}
         </div>
     );
 };
