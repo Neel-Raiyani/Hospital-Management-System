@@ -7,6 +7,7 @@ import labRoutes from '@routes/labRoutes.js';
 import { setupSwagger } from '@config/swagger.js';
 import { requestLogger } from '@utils/logger.js';
 import { rateLimiter } from '@middlewares/rateLimiter.js';
+import cors from 'cors';
 
 const app = express();
 const port = env.port;
@@ -16,6 +17,8 @@ const __dirname = path.dirname(__filename);
 
 connectDB();
 setupSwagger(app);
+
+app.use(cors());
 
 app.use(rateLimiter);
 app.use(express.json());
