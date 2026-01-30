@@ -98,7 +98,6 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
             where: {
                 doctorId,
                 appointmentDate,
-                status: 'WAITING',
             },
             orderBy: { tokenNumber: 'asc' },
         });
@@ -123,14 +122,21 @@ export const getAllAppointments = async (req: Request, res: Response) => {
         const appointmentDate = date ? new Date(date as string) : new Date();
         appointmentDate.setHours(0, 0, 0, 0);
 
+        const userRole = req.user?.role;
+        const whereClause: any = {
+            appointmentDate,
+        };
+
+        if (userRole === 'LAB') {
+            whereClause.status = 'LAB_TESTS';
+        }
+
         const appointments = await prisma.appointment.findMany({
-            where: {
-                appointmentDate,
-            },
+            where: whereClause,
             orderBy: { tokenNumber: 'asc' },
         });
 
-        logger.info(`All appointments fetched | date=${appointmentDate.toISOString()} | count=${appointments.length}`);
+        logger.info(`All appointments fetched | date=${appointmentDate.toISOString()} | role=${userRole} | count=${appointments.length}`);
 
         res.status(200).json(appointments);
     } catch (error) {
@@ -198,6 +204,13 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
 
         if (finalizedStatuses.includes(appointment.status)) {
             return res.status(400).json({ message: 'Finalized appointment cannot be updated' });
+        }
+
+        if (appointment.status === status) {
+            return res.status(200).json({
+                message: 'Status already updated',
+                updatedAppointment: appointment,
+            });
         }
 
         const allowedTransitions: { [key: string]: string[] } = {

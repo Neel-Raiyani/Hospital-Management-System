@@ -30,7 +30,7 @@ router.post(
 router.get(
     '/appointments',
     auth,
-    role('RECEPTIONIST', 'ADMIN'),
+    role('RECEPTIONIST', 'ADMIN', 'LAB'),
     getAllAppointments,
 );
 

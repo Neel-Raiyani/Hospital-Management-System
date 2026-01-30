@@ -4,7 +4,7 @@ import { body, param, query, validationResult } from 'express-validator';
 export const validate = (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        res.status(400).json({
+        return res.status(400).json({
             errors: errors.array().map((err) => {
                 return {
                     message: err.msg,
@@ -32,9 +32,9 @@ export const bookAppointmentValidator = [
 export const getDoctorAppointmentsValidator = [
     param('doctorId')
         .notEmpty()
-        .withMessage('Patient ID is required')
+        .withMessage('Doctor ID is required')
         .isMongoId()
-        .withMessage('Invalid patient ID'),
+        .withMessage('Invalid doctor ID'),
 
     query('date')
         .optional()
@@ -60,6 +60,6 @@ export const updateAppointmentStatusValidator = [
     body('status')
         .notEmpty()
         .withMessage('Status is required')
-        .isIn(['COMPLETED', 'CANCELLED'])
-        .withMessage('Status must be COMPLETED or CANCELLED'),
+        .isIn(['WAITING', 'LAB_TESTS', 'REVIEW', 'COMPLETED', 'CANCELLED'])
+        .withMessage('Invalid status value'),
 ];
