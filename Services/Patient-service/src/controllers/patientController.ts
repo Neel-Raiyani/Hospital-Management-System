@@ -9,9 +9,9 @@ export const createPatient = async (req: Request, res: Response) => {
         logger.info('Create patient request received');
 
         const counter = await prisma.counter.update({
-            where: {name: "patient"},
+            where: { name: "patient" },
             data: {
-                value: {increment: 1}
+                value: { increment: 1 }
             }
         })
 

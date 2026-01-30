@@ -5,12 +5,15 @@ import env from "@config/env.js";
 import { setupSwagger } from "@config/swagger.js";
 import { requestLogger } from "@utils/logger.js";
 import { rateLimiter } from "@middlewares/rateLimiter.js";
+import cors from "cors";
 
 const port = env.port;
 const app = express();
 
 connectDB();
 setupSwagger(app);
+
+app.use(cors());
 
 app.use(rateLimiter);
 app.use(express.json());
