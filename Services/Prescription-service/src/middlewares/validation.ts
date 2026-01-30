@@ -64,7 +64,7 @@ export const exportPrescriptionValidator = [
 ];
 
 export const updatePrescriptionValidator = [
-    body('prescriptionId')
+    param('id')
         .notEmpty()
         .withMessage('Prescription ID is required')
         .isMongoId()
