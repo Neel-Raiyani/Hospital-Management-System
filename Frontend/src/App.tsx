@@ -13,6 +13,8 @@ import LabDashboard from './pages/lab/LabDashboard.tsx';
 import ReceptionistDashboard from './pages/receptionist/ReceptionistDashboard.tsx';
 import BookAppointment from './pages/receptionist/BookAppointment.tsx';
 import AppointmentList from './pages/common/AppointmentList.tsx';
+import AddPatient from './pages/receptionist/AddPatient.tsx';
+import PatientList from './pages/receptionist/PatientList.tsx';
 
 function App() {
   return (
@@ -36,7 +38,7 @@ function App() {
             <Route
               path="appointments"
               element={
-                <ProtectedRoute allowedRoles={['DOCTOR', 'RECEPTIONIST', 'ADMIN']}>
+                <ProtectedRoute allowedRoles={['DOCTOR', 'RECEPTIONIST', 'ADMIN', 'LAB']}>
                   <AppointmentList />
                 </ProtectedRoute>
               }
@@ -102,6 +104,22 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['RECEPTIONIST']}>
                   <BookAppointment />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="receptionist/add-patient"
+              element={
+                <ProtectedRoute allowedRoles={['RECEPTIONIST']}>
+                  <AddPatient />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="receptionist/patients"
+              element={
+                <ProtectedRoute allowedRoles={['RECEPTIONIST']}>
+                  <PatientList />
                 </ProtectedRoute>
               }
             />

@@ -1,4 +1,4 @@
-import axiosInstance from './axios';
+import { labApi } from './services';
 import type { LabTest, LabReport } from '../types/lab';
 
 export const labService = {
@@ -6,7 +6,7 @@ export const labService = {
      * Get all pending lab tests
      */
     getPendingTests: async (): Promise<LabTest[]> => {
-        const response = await axiosInstance.get('/lab/labtests/pending', { baseURL: 'http://localhost:9018' });
+        const response = await labApi.get('/lab/labtests/pending');
         return response.data;
     },
 
@@ -24,8 +24,7 @@ export const labService = {
             formData.append('report', file);
         });
 
-        const response = await axiosInstance.post('/lab/create-report', formData, {
-            baseURL: 'http://localhost:9018',
+        const response = await labApi.post('/lab/create-report', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -44,7 +43,7 @@ export const labService = {
      * Get lab reports by patient ID
      */
     getPatientReports: async (patientId: string): Promise<LabReport[]> => {
-        const response = await axiosInstance.get(`/lab/report/${patientId}`, { baseURL: 'http://localhost:9018' });
+        const response = await labApi.get(`/lab/report/${patientId}`);
         return response.data;
     },
 
@@ -52,8 +51,7 @@ export const labService = {
      * Download a lab report
      */
     downloadReport: async (reportId: string): Promise<void> => {
-        const response = await axiosInstance.get(`/lab/download/${reportId}`, {
-            baseURL: 'http://localhost:9018',
+        const response = await labApi.get(`/lab/download/${reportId}`, {
             responseType: 'blob',
         });
 

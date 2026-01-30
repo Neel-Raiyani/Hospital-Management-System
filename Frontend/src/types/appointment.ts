@@ -19,6 +19,8 @@ export interface Appointment {
         name: string;
         specialization: string;
     };
+    hasCheckup?: boolean;
+    hasPrescription?: boolean;
 }
 
 export interface AppointmentFilters {

@@ -79,7 +79,7 @@ const LabReportUpload: React.FC<LabReportUploadProps> = ({
                     <div>
                         <h3 className="text-xl font-black text-gray-900 tracking-tight">Upload Lab Report</h3>
                         <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">
-                            {labTest.testType} • Patient ID: {labTest.patientId}
+                            {labTest.testType} • Patient: {labTest.patient?.name || labTest.patientId}
                         </p>
                     </div>
                     {!uploading && (

@@ -1,4 +1,4 @@
-import axiosInstance from './axios';
+import { appointmentApi } from './services';
 import type { Appointment, AppointmentFilters, AppointmentStatus } from '../types/appointment';
 
 export const appointmentService = {
@@ -6,7 +6,9 @@ export const appointmentService = {
      * Fetch appointments with optional filters
      */
     getAppointments: async (filters?: AppointmentFilters): Promise<Appointment[]> => {
-        const response = await axiosInstance.get('/opd/appointments', { params: filters });
+        const response = await appointmentApi.get('/appointment/appointments', {
+            params: filters
+        });
         return response.data;
     },
 
@@ -14,7 +16,7 @@ export const appointmentService = {
      * Update appointment status
      */
     updateStatus: async (id: string, status: AppointmentStatus): Promise<Appointment> => {
-        const response = await axiosInstance.patch(`/opd/appointments/${id}/status`, { status });
+        const response = await appointmentApi.patch(`/appointment/update-status/${id}`, { status });
         return response.data.updatedAppointment;
     },
 
@@ -22,7 +24,9 @@ export const appointmentService = {
      * Get appointments for a specific doctor
      */
     getDoctorAppointments: async (doctorId: string, date?: string): Promise<Appointment[]> => {
-        const response = await axiosInstance.get(`/opd/doctor/${doctorId}`, { params: { date } });
+        const response = await appointmentApi.get(`/appointment/doctor/${doctorId}`, {
+            params: { date }
+        });
         return response.data;
     },
 
@@ -30,7 +34,7 @@ export const appointmentService = {
      * Book a new appointment
      */
     bookAppointment: async (patientId: string, doctorId: string): Promise<any> => {
-        const response = await axiosInstance.post('/opd/book', { patientId, doctorId });
+        const response = await appointmentApi.post('/appointment/book', { patientId, doctorId });
         return response.data;
     }
 };

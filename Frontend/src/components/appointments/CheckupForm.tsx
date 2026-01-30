@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     X, Save, AlertCircle, Plus,
     Trash2, Calendar, Stethoscope,
@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import type { Appointment } from '../../types/appointment';
 import { checkupService } from '../../api/checkup.service';
+import { appointmentService } from '../../api/appointment.service';
+import type { Checkup } from '../../types/checkup';
 
 interface CheckupFormProps {
     appointment: Appointment;
@@ -18,6 +20,7 @@ interface CheckupFormProps {
 const CheckupForm: React.FC<CheckupFormProps> = ({
     appointment, isOpen, onClose, onSuccess
 }) => {
+    const [existingCheckup, setExistingCheckup] = useState<Checkup | null>(null);
     const [symptoms, setSymptoms] = useState('');
     const [diagnosis, setDiagnosis] = useState('');
     const [instructions, setInstructions] = useState('');
@@ -26,6 +29,31 @@ const CheckupForm: React.FC<CheckupFormProps> = ({
     const [newTest, setNewTest] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchExisting = async () => {
+            if (isOpen && appointment.id) {
+                try {
+                    setLoading(true);
+                    const checkup = await checkupService.getCheckupByAppointment(appointment.id);
+                    if (checkup) {
+                        setExistingCheckup(checkup);
+                        setSymptoms(checkup.symptoms);
+                        setDiagnosis(checkup.diagnosis);
+                        setInstructions(checkup.doctorNotes || '');
+                        if (checkup.labTests) {
+                            setLabTests(checkup.labTests.map(t => t.testType));
+                        }
+                    }
+                } catch (err) {
+                    console.log('No existing checkup found');
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+        fetchExisting();
+    }, [isOpen, appointment.id]);
 
     if (!isOpen) return null;
 
@@ -46,21 +74,37 @@ const CheckupForm: React.FC<CheckupFormProps> = ({
             setLoading(true);
             setError(null);
 
-            await checkupService.createCheckup({
-                appointmentId: appointment.id,
-                symptoms,
-                diagnosis,
-                doctorNotes: instructions,
-                labTests: labTests.length > 0 ? labTests : undefined
-            });
+            if (existingCheckup) {
+                await checkupService.updateCheckup(existingCheckup.id, {
+                    symptoms,
+                    diagnosis,
+                    doctorNotes: instructions,
+                    labTests: labTests.length > 0 ? labTests : undefined
+                });
+            } else {
+                await checkupService.createCheckup({
+                    appointmentId: appointment.id,
+                    symptoms,
+                    diagnosis,
+                    doctorNotes: instructions,
+                    labTests: labTests.length > 0 ? labTests : undefined
+                });
+            }
 
-            // If follow-up date is provided, update it (it's a separate call in the backend)
-            // Note: In a real app we might combine these or handle them in the same service method
-            // For now, mirroring backend separate endpoints if needed, but createCheckup 
-            // has been checked. Let's stick to essential clinical data.
+            // If lab tests are provided, update status to LAB_TESTS
+            if (labTests.length > 0) {
+                await appointmentService.updateStatus(appointment.id, 'LAB_TESTS');
+            }
 
             onSuccess();
-            onClose();
+
+            // Auto-close after successful update
+            if (existingCheckup) {
+                setTimeout(() => onClose(), 500);
+            } else {
+                // For new checkups, close immediately
+                onClose();
+            }
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to save checkup');
         } finally {
@@ -78,7 +122,9 @@ const CheckupForm: React.FC<CheckupFormProps> = ({
                             <Stethoscope className="w-6 h-6" />
                         </div>
                         <div>
-                            <h3 className="text-xl font-black text-gray-900 tracking-tight">Patient Checkup</h3>
+                            <h3 className="text-xl font-black text-gray-900 tracking-tight">
+                                {existingCheckup ? 'Update Patient Checkup' : 'Patient Checkup'}
+                            </h3>
                             <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">
                                 #{appointment.tokenNumber} • {appointment.patient?.name}
                             </p>
@@ -216,7 +262,7 @@ const CheckupForm: React.FC<CheckupFormProps> = ({
                 <div className="px-8 py-6 border-t border-gray-50 bg-gray-50/30 flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
                         <Info className="w-3 h-3" />
-                        Status update remains manual after saving checkup
+                        {labTests.length > 0 ? 'Status will update to At Lab' : 'Patient remains in Waiting List'}
                     </div>
                     <div className="flex gap-4">
                         <button
@@ -232,7 +278,7 @@ const CheckupForm: React.FC<CheckupFormProps> = ({
                             className="px-10 py-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all flex items-center gap-2 disabled:opacity-50 active:scale-95"
                         >
                             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                            Save Checkup
+                            {existingCheckup ? 'Update Checkup' : 'Save Checkup'}
                         </button>
                     </div>
                 </div>

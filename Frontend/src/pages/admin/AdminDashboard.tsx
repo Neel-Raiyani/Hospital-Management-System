@@ -1,48 +1,63 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, UserPlus, Activity, FileText } from 'lucide-react';
+import { Users, UserPlus, Activity, FileText, Loader2 } from 'lucide-react';
+import { adminService, type DashboardStats } from '../../api/admin.service';
 
 const AdminDashboard: React.FC = () => {
     const navigate = useNavigate();
+    const [stats, setStats] = useState<DashboardStats | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const data = await adminService.getDashboardStats();
+                setStats(data);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchStats();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+            </div>
+        );
+    }
+
     return (
         <div>
             <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-4">
-                        <Users className="w-8 h-8 text-blue-600" />
-                        <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Total</span>
+                        <Activity className="w-8 h-8 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Active</span>
                     </div>
-                    <p className="text-sm text-gray-500 mb-1">Total Users</p>
-                    <p className="text-3xl font-bold">156</p>
+                    <p className="text-sm text-gray-500 mb-1">Doctors Count</p>
+                    <p className="text-3xl font-bold">{stats?.doctorCount || 0}</p>
                 </div>
 
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-4">
-                        <Activity className="w-8 h-8 text-green-600" />
+                        <Users className="w-8 h-8 text-green-600" />
                         <span className="text-sm font-medium text-green-600 bg-green-50 px-3 py-1 rounded-full">Active</span>
                     </div>
-                    <p className="text-sm text-gray-500 mb-1">Active Doctors</p>
-                    <p className="text-3xl font-bold">24</p>
+                    <p className="text-sm text-gray-500 mb-1">Receptionists Count</p>
+                    <p className="text-3xl font-bold">{stats?.receptionistCount || 0}</p>
                 </div>
 
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-4">
                         <Users className="w-8 h-8 text-purple-600" />
-                        <span className="text-sm font-medium text-purple-600 bg-purple-50 px-3 py-1 rounded-full">Today</span>
+                        <span className="text-sm font-medium text-purple-600 bg-purple-50 px-3 py-1 rounded-full">Active</span>
                     </div>
-                    <p className="text-sm text-gray-500 mb-1">Patients Today</p>
-                    <p className="text-3xl font-bold">87</p>
-                </div>
-
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between mb-4">
-                        <FileText className="w-8 h-8 text-orange-600" />
-                        <span className="text-sm font-medium text-orange-600 bg-orange-50 px-3 py-1 rounded-full">Pending</span>
-                    </div>
-                    <p className="text-sm text-gray-500 mb-1">Pending Reports</p>
-                    <p className="text-3xl font-bold">12</p>
+                    <p className="text-sm text-gray-500 mb-1">Lab Staff Count</p>
+                    <p className="text-3xl font-bold">{stats?.labStaffCount || 0}</p>
                 </div>
             </div>
 

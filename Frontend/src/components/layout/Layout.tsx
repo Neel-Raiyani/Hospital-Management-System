@@ -1,4 +1,5 @@
 import React from 'react';
+import { Toaster } from 'react-hot-toast';
 import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar.tsx';
 import { useAuth } from '../../hooks/useAuth.ts';
@@ -14,6 +15,7 @@ const Layout: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 flex">
+            <Toaster position="top-right" />
             <Sidebar onLogout={handleLogout} />
 
             {/* Main Content */}

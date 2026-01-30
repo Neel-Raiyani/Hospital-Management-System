@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import {
-    Calendar, RefreshCw, Loader2, ChevronRight,
-    Search, Stethoscope
-} from 'lucide-react';
 import { appointmentService } from '../../api/appointment.service';
+import { patientService } from '../../api/patient.service';
+import { doctorService } from '../../api/doctor.service';
 import type { Appointment, AppointmentStatus } from '../../types/appointment';
 import { useAuth } from '../../hooks/useAuth';
 import StatusUpdateModal from '../../components/appointments/StatusUpdateModal';
 import CheckupForm from '../../components/appointments/CheckupForm';
+import PrescriptionForm from '../../components/appointments/PrescriptionForm';
+import { Pill, Stethoscope, RefreshCw, Loader2, ChevronRight, Search, Calendar } from 'lucide-react';
+import { checkupService } from '../../api/checkup.service';
+import { prescriptionService } from '../../api/prescription.service';
 
 const AppointmentList: React.FC = () => {
     const { user } = useAuth();
@@ -17,19 +19,49 @@ const AppointmentList: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
     const [checkupAppointment, setCheckupAppointment] = useState<Appointment | null>(null);
+    const [prescriptionAppointment, setPrescriptionAppointment] = useState<Appointment | null>(null);
 
     const fetchAppointments = async () => {
         try {
             setLoading(true);
-            let data: Appointment[];
+            let data: Appointment[] = [];
 
             if (user?.role === 'DOCTOR') {
-                data = await appointmentService.getDoctorAppointments(user.id);
+                const doctor = await doctorService.getDoctorByUserId(user.id);
+                if (doctor) {
+                    data = await appointmentService.getDoctorAppointments(doctor.id);
+                }
             } else {
+                // ADMIN, RECEPTIONIST, or LAB (Backend now handles LAB filtering)
                 data = await appointmentService.getAppointments();
             }
 
-            setAppointments(data);
+            // Enrich with patient and doctor details
+            const enrichedData = await Promise.all(
+                data.map(async (app: Appointment) => {
+                    try {
+                        const [patient, doctor, checkup, prescription] = await Promise.allSettled([
+                            patientService.getPatientById(app.patientId),
+                            doctorService.getDoctorById(app.doctorId),
+                            checkupService.getCheckupByAppointment(app.id),
+                            prescriptionService.getPrescriptionByAppointment(app.id)
+                        ]);
+
+                        return {
+                            ...app,
+                            patient: patient.status === 'fulfilled' ? patient.value : undefined,
+                            doctor: doctor.status === 'fulfilled' ? doctor.value : undefined,
+                            hasCheckup: checkup.status === 'fulfilled',
+                            hasPrescription: prescription.status === 'fulfilled'
+                        };
+                    } catch (err) {
+                        console.error(`Failed to enrich appointment ${app.id}:`, err);
+                        return app;
+                    }
+                })
+            );
+
+            setAppointments(enrichedData);
         } catch (error) {
             console.error('Failed to fetch appointments:', error);
         } finally {
@@ -38,21 +70,28 @@ const AppointmentList: React.FC = () => {
     };
 
     useEffect(() => {
+        if (user?.role === 'LAB') {
+            setFilter('LAB_TESTS');
+        }
+    }, [user?.role]);
+
+    useEffect(() => {
         fetchAppointments();
     }, [user?.id, user?.role]);
 
     const statusColors = {
-        WAITING: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-        LAB_TESTS: 'bg-purple-100 text-purple-700 border-purple-200',
-        REVIEW: 'bg-blue-100 text-blue-700 border-blue-200',
-        COMPLETED: 'bg-green-100 text-green-700 border-green-200',
-        CANCELLED: 'bg-red-100 text-red-700 border-red-200',
+        WAITING: 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100',
+        LAB_TESTS: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100',
+        REVIEW: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
+        COMPLETED: 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100',
+        CANCELLED: 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100',
     };
 
-    const filteredAppointments = appointments.filter(app => {
+    const filteredAppointments = (appointments || []).filter(app => {
         const matchesStatus = filter === 'ALL' || app.status === filter;
+        const patientName = app.patient?.name?.toLowerCase() || '';
         const matchesSearch =
-            app.patient?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            patientName.includes(searchTerm.toLowerCase()) ||
             app.tokenNumber.toString().includes(searchTerm);
         return matchesStatus && matchesSearch;
     });
@@ -87,7 +126,10 @@ const AppointmentList: React.FC = () => {
 
             {/* Filter Tabs */}
             <div className="flex gap-2 overflow-x-auto pb-2">
-                {['ALL', 'WAITING', 'LAB_TESTS', 'REVIEW', 'COMPLETED', 'CANCELLED'].map((s) => (
+                {(user?.role === 'LAB'
+                    ? ['LAB_TESTS']
+                    : ['ALL', 'WAITING', 'LAB_TESTS', 'REVIEW', 'COMPLETED', 'CANCELLED']
+                ).map((s) => (
                     <button
                         key={s}
                         onClick={() => setFilter(s as any)}
@@ -164,13 +206,30 @@ const AppointmentList: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-2">
+                                            {user?.role === 'DOCTOR' && (app.status === 'WAITING' || app.status === 'REVIEW') && (
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => setPrescriptionAppointment(app)}
+                                                        className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1 ${app.hasPrescription
+                                                            ? 'bg-emerald-100 text-emerald-800'
+                                                            : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                            }`}
+                                                    >
+                                                        <Pill className="w-3 h-3" />
+                                                        {app.hasPrescription ? 'Update RX' : 'Prescription'}
+                                                    </button>
+                                                </div>
+                                            )}
                                             {user?.role === 'DOCTOR' && app.status === 'WAITING' && (
                                                 <button
                                                     onClick={() => setCheckupAppointment(app)}
-                                                    className="px-3 py-1.5 bg-orange-50 text-orange-700 hover:bg-orange-100 rounded-lg text-xs font-black transition-all flex items-center gap-1"
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1 ${app.hasCheckup
+                                                        ? 'bg-indigo-100 text-indigo-800'
+                                                        : 'bg-orange-50 text-orange-700 hover:bg-orange-100'
+                                                        }`}
                                                 >
                                                     <Stethoscope className="w-3 h-3" />
-                                                    Checkup
+                                                    {app.hasCheckup ? 'Update Checkup' : 'Checkup'}
                                                 </button>
                                             )}
                                             <button
@@ -204,6 +263,14 @@ const AppointmentList: React.FC = () => {
                     appointment={checkupAppointment}
                     isOpen={!!checkupAppointment}
                     onClose={() => setCheckupAppointment(null)}
+                    onSuccess={fetchAppointments}
+                />
+            )}
+            {prescriptionAppointment && (
+                <PrescriptionForm
+                    appointment={prescriptionAppointment}
+                    isOpen={!!prescriptionAppointment}
+                    onClose={() => setPrescriptionAppointment(null)}
                     onSuccess={fetchAppointments}
                 />
             )}

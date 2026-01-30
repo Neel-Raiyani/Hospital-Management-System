@@ -31,10 +31,13 @@ export const MENU_CONFIG: Record<UserRole | 'DEFAULT', MenuItem[]> = {
     ],
     LAB: [
         { title: 'Dashboard', path: '/lab/dashboard', icon: LayoutDashboard },
+        { title: 'Appointments', path: '/appointments', icon: Calendar },
         { title: 'Lab Reports', path: '/lab/reports', icon: TestTube },
     ],
     RECEPTIONIST: [
         { title: 'Dashboard', path: '/receptionist/dashboard', icon: LayoutDashboard },
+        { title: 'Appointments', path: '/appointments', icon: Calendar },
+        { title: 'Patients', path: '/receptionist/patients', icon: User },
         { title: 'OPD Queue', path: '/queue', icon: Activity },
     ],
 };

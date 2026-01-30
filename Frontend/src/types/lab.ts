@@ -8,6 +8,14 @@ export interface LabTest {
     status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
     createdAt: string;
     updatedAt: string;
+    // Joined data
+    patient?: {
+        name: string;
+        phone: string;
+    };
+    doctor?: {
+        name: string;
+    };
 }
 
 export interface LabReport {

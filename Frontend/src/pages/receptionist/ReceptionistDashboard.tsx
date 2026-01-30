@@ -1,131 +1,214 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Calendar, UserPlus, Clock } from 'lucide-react';
+import { Users, Calendar, UserPlus, Clock, Loader2, ChevronRight } from 'lucide-react';
+import { appointmentService } from '../../api/appointment.service';
+import { patientService } from '../../api/patient.service';
+import { doctorService } from '../../api/doctor.service';
+import type { Appointment } from '../../types/appointment';
 
 const ReceptionistDashboard: React.FC = () => {
     const navigate = useNavigate();
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchDashboardData = async () => {
+        try {
+            setLoading(true);
+            const data = await appointmentService.getAppointments();
+
+            // Enrich with patient and doctor details
+            const enrichedData = await Promise.all(
+                data.map(async (app) => {
+                    try {
+                        const [patient, doctor] = await Promise.all([
+                            patientService.getPatientById(app.patientId),
+                            doctorService.getDoctorById(app.doctorId)
+                        ]);
+                        return { ...app, patient, doctor };
+                    } catch (err) {
+                        console.error(`Failed to enrich appointment ${app.id}:`, err);
+                        return app;
+                    }
+                })
+            );
+
+            setAppointments(enrichedData);
+        } catch (error) {
+            console.error('Failed to fetch receptionist dashboard data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
+
+    const waitingAppointments = appointments.filter(app => app.status === 'WAITING' || app.status === 'LAB_TESTS');
+    const todayCount = appointments.length;
+
     return (
-        <div>
-            <h1 className="text-3xl font-bold mb-6">Receptionist Dashboard</h1>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between mb-4">
-                        <Users className="w-8 h-8 text-blue-600" />
-                        <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Queue</span>
-                    </div>
-                    <p className="text-sm text-gray-500 mb-1">OPD Queue</p>
-                    <p className="text-3xl font-bold">15</p>
+        <div className="animate-in fade-in duration-500">
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">Receptionist Dashboard</h1>
+                    <p className="text-gray-500 font-medium">Manage patient check-ins and registrations</p>
                 </div>
-
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between mb-4">
-                        <Calendar className="w-8 h-8 text-green-600" />
-                        <span className="text-sm font-medium text-green-600 bg-green-50 px-3 py-1 rounded-full">Today</span>
-                    </div>
-                    <p className="text-sm text-gray-500 mb-1">Appointments Today</p>
-                    <p className="text-3xl font-bold">42</p>
-                </div>
-
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between mb-4">
-                        <UserPlus className="w-8 h-8 text-purple-600" />
-                        <span className="text-sm font-medium text-purple-600 bg-purple-50 px-3 py-1 rounded-full">New</span>
-                    </div>
-                    <p className="text-sm text-gray-500 mb-1">New Registrations</p>
-                    <p className="text-3xl font-bold">8</p>
-                </div>
-
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between mb-4">
-                        <Clock className="w-8 h-8 text-orange-600" />
-                        <span className="text-sm font-medium text-orange-600 bg-orange-50 px-3 py-1 rounded-full">Waiting</span>
-                    </div>
-                    <p className="text-sm text-gray-500 mb-1">Avg Wait Time</p>
-                    <p className="text-3xl font-bold">12m</p>
+                <div className="bg-white px-4 py-2 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    <span className="text-sm font-bold text-gray-600 uppercase tracking-widest leading-none">Live System</span>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold">OPD Queue</h2>
-                        <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">Manage Queue</button>
-                    </div>
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                            <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                                1
-                            </div>
-                            <div className="flex-1">
-                                <p className="font-medium">John Doe</p>
-                                <p className="text-sm text-gray-500">Token: OPD-001 • Dr. Smith</p>
-                            </div>
-                            <div className="text-right">
-                                <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">In Progress</span>
-                            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-gray-100/50 transition-all group overflow-hidden relative">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-[4rem] -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+                    <div className="relative">
+                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                            <Users className="w-6 h-6" />
                         </div>
-                        <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                            <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center text-gray-700 font-bold text-lg">
-                                2
-                            </div>
-                            <div className="flex-1">
-                                <p className="font-medium">Alice Smith</p>
-                                <p className="text-sm text-gray-500">Token: OPD-002 • Dr. Johnson</p>
-                            </div>
-                            <div className="text-right">
-                                <span className="text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">Waiting</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                            <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center text-gray-700 font-bold text-lg">
-                                3
-                            </div>
-                            <div className="flex-1">
-                                <p className="font-medium">Bob Wilson</p>
-                                <p className="text-sm text-gray-500">Token: OPD-003 • Dr. Smith</p>
-                            </div>
-                            <div className="text-right">
-                                <span className="text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">Waiting</span>
-                            </div>
-                        </div>
+                        <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">OPD Queue</p>
+                        <p className="text-3xl font-black text-gray-900 mt-1">{loading ? '...' : waitingAppointments.length}</p>
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-                    <div className="space-y-3">
-                        <button className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
-                            <UserPlus className="w-5 h-5" />
-                            Register New Patient
-                        </button>
-                        <button
-                            onClick={() => navigate('/receptionist/book')}
-                            className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
-                        >
-                            <Calendar className="w-5 h-5" />
-                            Schedule Appointment
-                        </button>
+                <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-gray-100/50 transition-all group overflow-hidden relative">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-green-50 rounded-bl-[4rem] -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+                    <div className="relative">
+                        <div className="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-green-600 group-hover:text-white transition-all">
+                            <Calendar className="w-6 h-6" />
+                        </div>
+                        <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Appointments</p>
+                        <p className="text-3xl font-black text-gray-900 mt-1">{loading ? '...' : todayCount}</p>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-gray-100/50 transition-all group overflow-hidden relative">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-[4rem] -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+                    <div className="relative">
+                        <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-purple-600 group-hover:text-white transition-all">
+                            <UserPlus className="w-6 h-6" />
+                        </div>
+                        <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">New</p>
+                        <p className="text-3xl font-black text-gray-900 mt-1">12</p>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-gray-100/50 transition-all group overflow-hidden relative">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-bl-[4rem] -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+                    <div className="relative">
+                        <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-orange-600 group-hover:text-white transition-all">
+                            <Clock className="w-6 h-6" />
+                        </div>
+                        <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Wait Time</p>
+                        <p className="text-3xl font-black text-gray-900 mt-1">15m</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="text-xl font-black text-gray-900 tracking-tight">Real-time OPD Queue</h2>
                         <button
                             onClick={() => navigate('/appointments')}
-                            className="w-full flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors"
+                            className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all"
                         >
-                            <Calendar className="w-5 h-5" />
-                            View All Appointments
+                            Full List
                         </button>
                     </div>
 
-                    <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-                        <h3 className="font-medium text-gray-900 mb-2">Today's Summary</h3>
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                            <div>
-                                <p className="text-gray-600">Check-ins</p>
-                                <p className="text-lg font-bold text-blue-600">34</p>
+                    <div className="space-y-4">
+                        {loading ? (
+                            <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                                <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Loading Queue...</p>
                             </div>
-                            <div>
-                                <p className="text-gray-600">Check-outs</p>
-                                <p className="text-lg font-bold text-green-600">28</p>
+                        ) : waitingAppointments.length === 0 ? (
+                            <div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200">
+                                <Users className="w-12 h-12 mx-auto mb-4 text-gray-200" />
+                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Queue is currently empty</p>
                             </div>
+                        ) : (
+                            waitingAppointments.slice(0, 5).map((app, index) => (
+                                <div key={app.id} className="flex items-center gap-5 p-5 bg-gray-50 rounded-[2rem] hover:bg-white hover:shadow-xl hover:shadow-gray-100 transition-all border border-transparent hover:border-gray-100 group">
+                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl shadow-sm transition-all ${index === 0 ? 'bg-blue-600 text-white shadow-blue-100 ring-4 ring-blue-50' : 'bg-white text-gray-400 group-hover:text-blue-600'}`}>
+                                        {index + 1}
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-black text-gray-900 leading-none">{app.patient?.name || 'Unknown Patient'}</p>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-white px-2 py-0.5 rounded-md border border-gray-100">
+                                                Token: {app.tokenNumber}
+                                            </span>
+                                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">
+                                                Dr. {app.doctor?.name || 'Unknown'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className={`text-[10px] font-black px-3 py-1 rounded-full border uppercase tracking-widest ${app.status === 'WAITING' ? 'bg-yellow-50 text-yellow-600 border-yellow-100' : 'bg-purple-50 text-purple-600 border-purple-100'
+                                            }`}>
+                                            {app.status === 'WAITING' ? 'Waiting' : 'Lab Tests'}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+
+                <div className="space-y-8">
+                    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col h-full">
+                        <h2 className="text-xl font-black text-gray-900 tracking-tight mb-8">Quick Actions</h2>
+                        <div className="grid grid-cols-1 gap-4 flex-1">
+                            <button
+                                onClick={() => navigate('/receptionist/add-patient')}
+                                className="group flex items-center justify-between p-6 bg-blue-50 rounded-[2rem] hover:bg-blue-600 transition-all"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+                                        <UserPlus className="w-6 h-6" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-black text-blue-900 group-hover:text-white transition-colors">Register Patient</p>
+                                        <p className="text-xs font-bold text-blue-400 group-hover:text-blue-100 transition-colors">New patient onboarding</p>
+                                    </div>
+                                </div>
+                                <ChevronRight className="w-5 h-5 text-blue-200 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                            </button>
+
+                            <button
+                                onClick={() => navigate('/receptionist/book')}
+                                className="group flex items-center justify-between p-6 bg-green-50 rounded-[2rem] hover:bg-green-600 transition-all"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform">
+                                        <Calendar className="w-6 h-6" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-black text-green-900 group-hover:text-white transition-colors">Book Appointment</p>
+                                        <p className="text-xs font-bold text-green-400 group-hover:text-green-100 transition-colors">Schedule OPD session</p>
+                                    </div>
+                                </div>
+                                <ChevronRight className="w-5 h-5 text-green-200 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                            </button>
+
+                            <button
+                                onClick={() => navigate('/appointments')}
+                                className="group flex items-center justify-between p-6 bg-purple-50 rounded-[2rem] hover:bg-purple-600 transition-all"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
+                                        <Users className="w-6 h-6" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-black text-purple-900 group-hover:text-white transition-colors">All Activities</p>
+                                        <p className="text-xs font-bold text-purple-400 group-hover:text-purple-100 transition-colors">View full system logs</p>
+                                    </div>
+                                </div>
+                                <ChevronRight className="w-5 h-5 text-purple-200 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                            </button>
                         </div>
                     </div>
                 </div>
