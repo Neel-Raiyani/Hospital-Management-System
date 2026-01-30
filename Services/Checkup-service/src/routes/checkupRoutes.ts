@@ -6,6 +6,7 @@ import {
     getPatientCheckups,
     updateCheckup,
     updateFollowUp,
+    getCheckupByAppointment,
 } from '@controllers/checkupController.js';
 import {
     createCheckupValidator,
@@ -28,6 +29,8 @@ router.patch(
     validate,
     updateFollowUp,
 );
+
+router.get('/appointment/:appointmentId', auth, role('DOCTOR'), getCheckupByAppointment);
 
 router.get(
     '/patient/:patientId',

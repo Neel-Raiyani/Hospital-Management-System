@@ -178,3 +178,31 @@ export const updateFollowUp = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Failed to update follow-up', error });
     }
 };
+
+export const getCheckupByAppointment = async (req: Request, res: Response) => {
+    try {
+        const { appointmentId } = req.params;
+
+        logger.info(`Fetch checkup by appointment | appointmentId=${appointmentId}`);
+
+        if (!appointmentId) {
+            return res.status(400).json({ message: 'Missing required parameter: appointmentId' });
+        }
+
+        const checkup = await prisma.checkup.findFirst({
+            where: { appointmentId },
+            include: { labTests: true },
+        });
+
+        if (!checkup) {
+            return res.status(404).json({ message: 'Checkup not found' });
+        }
+
+        logger.info(`Checkup fetched successfully | appointmentId=${appointmentId}`);
+
+        res.json(checkup);
+    } catch (error) {
+        logger.error(`Fetch checkup error | error=${(error as Error).message}`);
+        res.status(500).json({ message: 'Failed to fetch checkup', error });
+    }
+};
