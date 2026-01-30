@@ -6,6 +6,7 @@ import {
     getDoctorAppointments,
     getPatientappointments,
     updateAppointmentStatus,
+    getAllAppointments,
 } from '@controllers/appointmentController.js';
 import {
     bookAppointmentValidator,
@@ -24,6 +25,13 @@ router.post(
     bookAppointmentValidator,
     validate,
     bookAppointment,
+);
+
+router.get(
+    '/appointments',
+    auth,
+    role('RECEPTIONIST', 'ADMIN'),
+    getAllAppointments,
 );
 
 router.get(

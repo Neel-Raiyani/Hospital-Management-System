@@ -115,6 +115,32 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
     }
 };
 
+export const getAllAppointments = async (req: Request, res: Response) => {
+    try {
+        const { date } = req.query;
+        logger.info(`Fetch all appointments request | date=${date || 'today'}`);
+
+        const appointmentDate = date ? new Date(date as string) : new Date();
+        appointmentDate.setHours(0, 0, 0, 0);
+
+        const appointments = await prisma.appointment.findMany({
+            where: {
+                appointmentDate,
+            },
+            orderBy: { tokenNumber: 'asc' },
+        });
+
+        logger.info(`All appointments fetched | date=${appointmentDate.toISOString()} | count=${appointments.length}`);
+
+        res.status(200).json(appointments);
+    } catch (error) {
+        logger.error(`Fetch all appointments error | error=${(error as Error).message}`);
+
+        res.status(500).json({ message: 'Failed to fetch appointments', error });
+    }
+};
+
+
 export const getPatientappointments = async (req: Request, res: Response) => {
     try {
         const { patientId } = req.params;
