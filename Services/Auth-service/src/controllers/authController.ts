@@ -84,8 +84,7 @@ export const createUser = async (req: Request, res: Response) => {
     });
   } catch (error) {
     logger.error(
-      `Create user failed | email=${req.body?.email ?? "unknown"} | error=${
-        (error as Error).message
+      `Create user failed | email=${req.body?.email ?? "unknown"} | error=${(error as Error).message
       }`
     );
     res.status(500).json({ message: "Internal server error" });
@@ -109,6 +108,8 @@ export const login = async (req: Request, res: Response) => {
     const token = generateToken({
       userId: user.id,
       role: user.role,
+      email: user.email,
+      name: user.name,
       forcePasswordChange: !user.isPasswordChanged,
     });
 
@@ -116,8 +117,7 @@ export const login = async (req: Request, res: Response) => {
     res.status(200).json({ message: "User login successfull", token });
   } catch (error) {
     logger.error(
-      `Login error | email=${req.body?.email ?? "unknown"} | error=${
-        (error as Error).message
+      `Login error | email=${req.body?.email ?? "unknown"} | error=${(error as Error).message
       }`
     );
     res.status(500).json({ message: "Login failed" });
@@ -141,7 +141,7 @@ export const changePassword = async (req: Request, res: Response) => {
 
     const hashedPassword = await hashPassword(newPassword);
 
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
         password: hashedPassword,
@@ -149,11 +149,132 @@ export const changePassword = async (req: Request, res: Response) => {
       },
     });
 
+    const token = generateToken({
+      userId: updatedUser.id,
+      role: updatedUser.role,
+      email: updatedUser.email,
+      name: updatedUser.name,
+      forcePasswordChange: false,
+    });
+
     logger.info(`Password changed successfully | userId=${userId}`);
-    res.status(201).json({ message: "Password changed successfully" });
+    res.status(201).json({ message: "Password changed successfully", token });
 
   } catch (error) {
     logger.error(`Password change error | userId=${req.user?.userId ?? "unknown"} | error=${(error as Error).message}`);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getUsers = async (req: Request, res: Response) => {
+  try {
+    // Fetch all users
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Fetch role-specific data in parallel
+    const [doctors, receptionists, labStaff] = await Promise.all([
+      prisma.doctor.findMany({
+        select: {
+          userId: true,
+          specialization: true,
+          experienceYears: true,
+          opdStartTime: true,
+          opdEndTime: true,
+        },
+      }),
+      prisma.receptionist.findMany({
+        select: {
+          userId: true,
+          phone: true,
+          shift: true,
+        },
+      }),
+      prisma.labStaff.findMany({
+        select: {
+          userId: true,
+          phone: true,
+          shift: true,
+        },
+      }),
+    ]);
+
+    // Create lookup maps
+    const doctorMap = new Map(doctors.map((d) => [d.userId, d]));
+    const receptionistMap = new Map(receptionists.map((r) => [r.userId, r]));
+    const labStaffMap = new Map(labStaff.map((l) => [l.userId, l]));
+
+    // Transform the data to flatten role-specific fields
+    const transformedUsers = users.map((user) => {
+      const doctor = doctorMap.get(user.id);
+      const receptionist = receptionistMap.get(user.id);
+      const lab = labStaffMap.get(user.id);
+
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.isActive ? 'ACTIVE' : 'INACTIVE',
+        createdAt: user.createdAt,
+        // Doctor fields
+        specialization: doctor?.specialization ?? null,
+        experienceYears: doctor?.experienceYears ?? null,
+        opdStartTime: doctor?.opdStartTime ?? null,
+        opdEndTime: doctor?.opdEndTime ?? null,
+        // Receptionist/Lab fields
+        phone: receptionist?.phone ?? lab?.phone ?? null,
+        shift: receptionist?.shift ?? lab?.shift ?? null,
+      };
+    });
+
+    logger.info(`Fetched ${transformedUsers.length} users`);
+    res.status(200).json(transformedUsers);
+  } catch (error) {
+    logger.error(`Get users error | error=${(error as Error).message}`);
+    res.status(500).json({ message: "Failed to fetch users" });
+  }
+};
+
+export const updateUserStatus = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { isActive } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    if (typeof isActive !== 'boolean') {
+      return res.status(400).json({ message: "isActive must be a boolean" });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { isActive },
+    });
+
+    const action = isActive ? 'activated' : 'deactivated';
+    logger.info(`User ${action} successfully | userId=${userId}`);
+    res.status(200).json({ message: `User ${action} successfully` });
+  } catch (error) {
+    logger.error(`Update user status error | userId=${req.params?.userId ?? "unknown"} | error=${(error as Error).message}`);
+    res.status(500).json({ message: "Failed to update user status" });
   }
 };
