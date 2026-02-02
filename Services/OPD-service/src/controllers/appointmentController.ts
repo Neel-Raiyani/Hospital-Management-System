@@ -136,7 +136,7 @@ export const getAllAppointments = async (req: Request, res: Response) => {
             orderBy: { tokenNumber: 'asc' },
         });
 
-        logger.info(`All appointments fetched | date=${appointmentDate.toISOString()} | role=${userRole} | count=${appointments.length}`);
+        logger.info(`All appointments fetched | date=${appointmentDate.toISOString()} | user=${req.user?.name} (${userRole}) | count=${appointments.length}`);
 
         res.status(200).json(appointments);
     } catch (error) {
@@ -181,7 +181,7 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
         const userRole = req.user?.role;
 
         logger.info(
-            `Update appointment status request | appointmentId=${id} | requestedStatus=${status} | role=${userRole}`,
+            `Update appointment status request | appointmentId=${id} | requestedStatus=${status} | user=${req.user?.name} (${userRole})`,
         );
 
         if (!userRole) {

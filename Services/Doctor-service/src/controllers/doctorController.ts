@@ -8,7 +8,7 @@ export const updateDoctor = async (req: Request, res: Response) => {
 
         const { name, specialization, qualification, experienceYears, opdStartTime, opdEndTime } = req.body;
 
-        logger.info(`Update doctor request | doctorId=${id}`);
+        logger.info(`Update doctor request | doctorId=${id} | user=${req.user?.name}`);
 
         const updatedDoctor = await prisma.$transaction(async (tx) => {
             const doctor = await tx.doctor.update({
@@ -24,7 +24,7 @@ export const updateDoctor = async (req: Request, res: Response) => {
             });
 
             await tx.oPD.update({
-                where: {doctorId: id},
+                where: { doctorId: id },
                 data: {
                     startTime: doctor.opdStartTime,
                     endTime: doctor.opdEndTime
@@ -38,7 +38,7 @@ export const updateDoctor = async (req: Request, res: Response) => {
         );
 
 
-        res.status(201).json({ message: "Doctor updated successfully", updatedDoctor});
+        res.status(201).json({ message: "Doctor updated successfully", updatedDoctor });
 
     } catch (error) {
         logger.error(`Update doctor error | error=${(error as Error).message}`);
@@ -82,7 +82,7 @@ export const getDoctorById = async (req: Request, res: Response) => {
         }
 
         logger.info(`Doctor fetched successfully | doctorId=${id}`);
-        
+
         res.json(doctor);
     } catch (error) {
         logger.error(`Fetch doctor error | error=${(error as Error).message}`);
@@ -97,7 +97,7 @@ export const deactivateDoctor = async (req: Request, res: Response) => {
     try {
         const { id } = req.params as { id: string };
 
-        logger.info(`Deactivate doctor request | doctorId=${id}`);
+        logger.info(`Deactivate doctor request | doctorId=${id} | user=${req.user?.name}`);
 
         await prisma.doctor.update({
             where: { id },
