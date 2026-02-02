@@ -18,7 +18,7 @@ export const MENU_CONFIG: Record<UserRole | 'DEFAULT', MenuItem[]> = {
     ],
     ADMIN: [
         { title: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-        { title: 'Manage Users', path: '/admin/users', icon: Users },
+        { title: 'Manage Users', path: '/admin/staff', icon: Users },
         { title: 'Appointments', path: '/appointments', icon: Calendar },
         { title: 'Patients', path: '/patients', icon: User },
         { title: 'Lab Reports', path: '/lab/reports', icon: TestTube },

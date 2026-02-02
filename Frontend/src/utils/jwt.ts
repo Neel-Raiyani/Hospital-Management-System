@@ -4,6 +4,7 @@ interface JWTPayload {
     userId: string;
     role: 'ADMIN' | 'DOCTOR' | 'LAB' | 'RECEPTIONIST';
     email: string;
+    name: string;
     forcePasswordChange: boolean;
     iat: number;
     exp: number;
@@ -39,9 +40,13 @@ export const getUserFromToken = (token: string) => {
     const decoded = decodeToken(token);
     if (!decoded) return null;
 
+    const email = decoded.email || '';
+    const name = decoded.name || (email ? email.split('@')[0] : 'Admin');
+
     return {
         id: decoded.userId,
-        email: decoded.email,
+        name: name,
+        email: email,
         role: decoded.role,
         forcePasswordChange: decoded.forcePasswordChange,
     };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.ts';
 
 interface ProtectedRouteProps {
@@ -12,6 +12,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     allowedRoles
 }) => {
     const { isAuthenticated, user, isLoading, checkAuth } = useAuth();
+    const location = useLocation();
 
     // Show loading state while checking authentication
     if (isLoading) {
@@ -28,6 +29,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     // Check if token is valid
     if (!checkAuth() || !isAuthenticated) {
         return <Navigate to="/login" replace />;
+    }
+
+    // Check if user needs to change password (redirect to force password change page)
+    // Skip this check if already on the password change page
+    if (user?.forcePasswordChange && location.pathname !== '/change-password-required') {
+        return <Navigate to="/change-password-required" replace />;
     }
 
     // Check role-based access if allowedRoles is specified

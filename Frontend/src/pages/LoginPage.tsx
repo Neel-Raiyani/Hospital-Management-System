@@ -3,15 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Hospital, Loader2, Mail, Lock, AlertCircle } from 'lucide-react';
+import { Shield, Loader2, User, Lock, AlertCircle, KeyRound } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.ts';
 import { decodeToken } from '../utils/jwt.ts';
 
 // Login Validation Schema
 const loginSchema = z.object({
     email: z.string()
-        .min(1, 'Email is required')
-        .email('Please enter a valid email address'),
+        .min(1, 'Employee ID or Email is required')
+        .refine(
+            (val) => val.includes('@') ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) : val.length >= 3,
+            'Please enter a valid Employee ID or Email'
+        ),
     password: z.string()
         .min(6, 'Password must be at least 6 characters'),
 });
@@ -71,89 +74,282 @@ const LoginPage: React.FC = () => {
                 navigate('/');
             }
         } catch (err: any) {
-            setServerError(err.response?.data?.message || 'Invalid email or password. Please try again.');
+            setServerError(err.response?.data?.message || 'Authentication failed. Please verify your credentials.');
         }
     };
 
-    const inputClasses = (error?: any) => `
-        block w-full pl-11 pr-4 py-3 bg-gray-50 border rounded-xl outline-none transition-all
-        ${error
-            ? 'border-red-300 focus:ring-2 focus:ring-red-100 focus:border-red-400'
-            : 'border-gray-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-400'}
-        disabled:opacity-50
-    `;
-
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
-            <div className="max-w-md w-full">
-                {/* Logo Section */}
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-xl mb-4 text-blue-600">
-                        <Hospital className="w-10 h-10" />
+        <div className="login-page">
+            {/* CSS-based abstract medical background */}
+            <style>{`
+                .login-page {
+                    min-height: 100vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 24px;
+                    font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+                    background: 
+                        radial-gradient(circle at 20% 80%, rgba(0, 82, 204, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(0, 82, 204, 0.06) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 40%, rgba(0, 82, 204, 0.04) 0%, transparent 30%),
+                        linear-gradient(180deg, #F8FAFC 0%, #EEF2F7 100%);
+                    position: relative;
+                    overflow: hidden;
+                }
+                .login-page::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-image: 
+                        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5v10M25 10h10M30 45v10M25 50h10M5 30h10M10 25v10M45 30h10M50 25v10' stroke='%230052CC' stroke-opacity='0.04' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+                    pointer-events: none;
+                }
+                .login-card {
+                    width: 100%;
+                    max-width: 400px;
+                    background: #FFFFFF;
+                    border: 1px solid #DFE1E6;
+                    border-radius: 6px;
+                    box-shadow: 0 4px 12px rgba(9, 30, 66, 0.08), 0 0 1px rgba(9, 30, 66, 0.12);
+                    position: relative;
+                    z-index: 1;
+                }
+                .login-header {
+                    padding: 32px 32px 24px;
+                    text-align: center;
+                    border-bottom: 1px solid #EBECF0;
+                    background: linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 100%);
+                }
+                .shield-icon {
+                    width: 56px;
+                    height: 56px;
+                    background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%);
+                    border-radius: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 16px;
+                    box-shadow: 0 2px 8px rgba(0, 82, 204, 0.25);
+                }
+                .shield-icon svg {
+                    color: white;
+                }
+                .login-title {
+                    font-size: 20px;
+                    font-weight: 700;
+                    color: #172B4D;
+                    margin: 0 0 4px;
+                    letter-spacing: -0.3px;
+                }
+                .login-subtitle {
+                    font-size: 13px;
+                    color: #6B778C;
+                    margin: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                }
+                .login-subtitle svg {
+                    width: 14px;
+                    height: 14px;
+                    color: #00875A;
+                }
+                .login-body {
+                    padding: 28px 32px 32px;
+                }
+                .error-banner {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 10px;
+                    padding: 12px;
+                    margin-bottom: 20px;
+                    background: #FFEBE6;
+                    border: 1px solid #FF8F73;
+                    border-radius: 4px;
+                    font-size: 13px;
+                    color: #BF2600;
+                }
+                .error-banner svg {
+                    flex-shrink: 0;
+                    margin-top: 1px;
+                }
+                .form-group {
+                    margin-bottom: 20px;
+                }
+                .form-label {
+                    display: block;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #172B4D;
+                    margin-bottom: 6px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .input-wrapper {
+                    position: relative;
+                }
+                .input-icon {
+                    position: absolute;
+                    left: 12px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: #6B778C;
+                    pointer-events: none;
+                }
+                .form-input {
+                    width: 100%;
+                    padding: 10px 12px 10px 40px;
+                    font-size: 14px;
+                    font-family: inherit;
+                    color: #172B4D;
+                    background: #FAFBFC;
+                    border: 1px solid #DFE1E6;
+                    border-radius: 4px;
+                    outline: none;
+                    transition: border-color 100ms, box-shadow 100ms;
+                }
+                .form-input:focus {
+                    background: #FFFFFF;
+                    border-color: #0052CC;
+                    box-shadow: 0 0 0 1px #0052CC;
+                }
+                .form-input.has-error {
+                    border-color: #DE350B;
+                }
+                .form-input.has-error:focus {
+                    box-shadow: 0 0 0 1px #DE350B;
+                }
+                .form-input::placeholder {
+                    color: #A5ADBA;
+                }
+                .form-input:disabled {
+                    background: #F4F5F7;
+                    color: #A5ADBA;
+                    cursor: not-allowed;
+                }
+                .form-error {
+                    font-size: 11px;
+                    color: #DE350B;
+                    margin-top: 4px;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+                .submit-btn {
+                    width: 100%;
+                    padding: 12px 16px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    font-family: inherit;
+                    color: #FFFFFF;
+                    background: linear-gradient(180deg, #0052CC 0%, #0747A6 100%);
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    transition: opacity 100ms;
+                    box-shadow: 0 1px 2px rgba(7, 71, 166, 0.2);
+                }
+                .submit-btn:hover:not(:disabled) {
+                    opacity: 0.92;
+                }
+                .submit-btn:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                }
+                .submit-btn svg {
+                    width: 18px;
+                    height: 18px;
+                }
+                .login-footer {
+                    padding: 16px 32px;
+                    background: #FAFBFC;
+                    border-top: 1px solid #EBECF0;
+                    text-align: center;
+                }
+                .footer-text {
+                    font-size: 11px;
+                    color: #6B778C;
+                    margin: 0;
+                    line-height: 1.5;
+                }
+                .footer-text strong {
+                    color: #172B4D;
+                }
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+                .spinner {
+                    animation: spin 0.6s linear infinite;
+                }
+            `}</style>
+
+            <div className="login-card">
+                {/* Header with Shield Icon */}
+                <div className="login-header">
+                    <div className="shield-icon">
+                        <Shield size={28} strokeWidth={2} />
                     </div>
-                    <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-                        Empyreal <span className="text-blue-600">HMS</span>
-                    </h1>
-                    <p className="text-gray-500 mt-2 font-medium">Healthcare management simplified</p>
+                    <h1 className="login-title">Hospital Staff Portal</h1>
+                    <p className="login-subtitle">
+                        <Lock size={14} />
+                        Secure Authentication Required
+                    </p>
                 </div>
 
-                {/* Login Card */}
-                <div className="bg-white rounded-3xl shadow-2xl shadow-blue-100/50 p-8 border border-gray-100">
-                    <div className="mb-6">
-                        <h2 className="text-2xl font-bold text-gray-800">Sign In</h2>
-                        <p className="text-gray-500 text-sm mt-1">Enter your credentials to access your dashboard</p>
-                    </div>
-
+                {/* Form Body */}
+                <div className="login-body">
                     {serverError && (
-                        <div className="mb-6 bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-3 animate-shake">
-                            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                            <p>{serverError}</p>
+                        <div className="error-banner">
+                            <AlertCircle size={16} />
+                            <span>{serverError}</span>
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                        {/* Email Field */}
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-semibold text-gray-700 ml-1">Email Address</label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-                                    <Mail className="w-5 h-5" />
-                                </div>
+                    <form onSubmit={handleSubmit(onSubmit)}>
+                        {/* Employee ID / Email Field */}
+                        <div className="form-group">
+                            <label className="form-label">Employee ID / Email</label>
+                            <div className="input-wrapper">
+                                <User size={18} className="input-icon" />
                                 <input
-                                    type="email"
+                                    type="text"
                                     {...register('email')}
                                     disabled={isSubmitting}
-                                    className={inputClasses(errors.email)}
-                                    placeholder="name@hospital.com"
+                                    className={`form-input ${errors.email ? 'has-error' : ''}`}
+                                    placeholder="Enter your ID or email"
+                                    autoComplete="username"
                                 />
                             </div>
                             {errors.email && (
-                                <p className="text-xs font-medium text-red-500 ml-1">{errors.email.message}</p>
+                                <p className="form-error">{errors.email.message}</p>
                             )}
                         </div>
 
                         {/* Password Field */}
-                        <div className="space-y-1.5">
-                            <div className="flex justify-between items-center px-1">
-                                <label className="text-sm font-semibold text-gray-700">Password</label>
-                                <button type="button" className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors">
-                                    Forgot Password?
-                                </button>
-                            </div>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-                                    <Lock className="w-5 h-5" />
-                                </div>
+                        <div className="form-group">
+                            <label className="form-label">Password</label>
+                            <div className="input-wrapper">
+                                <KeyRound size={18} className="input-icon" />
                                 <input
                                     type="password"
                                     {...register('password')}
                                     disabled={isSubmitting}
-                                    className={inputClasses(errors.password)}
+                                    className={`form-input ${errors.password ? 'has-error' : ''}`}
                                     placeholder="••••••••"
+                                    autoComplete="current-password"
                                 />
                             </div>
                             {errors.password && (
-                                <p className="text-xs font-medium text-red-500 ml-1">{errors.password.message}</p>
+                                <p className="form-error">{errors.password.message}</p>
                             )}
                         </div>
 
@@ -161,25 +357,30 @@ const LoginPage: React.FC = () => {
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
+                            className="submit-btn"
                         >
                             {isSubmitting ? (
                                 <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    <Loader2 className="spinner" />
                                     <span>Authenticating...</span>
                                 </>
                             ) : (
-                                'Sign Into Dashboard'
+                                <>
+                                    <Lock size={18} />
+                                    <span>Secure Sign In</span>
+                                </>
                             )}
                         </button>
                     </form>
                 </div>
 
-                {/* Footer Info */}
-                <p className="text-center text-gray-500 text-xs mt-8">
-                    &copy; 2024 Empyreal HMS. All rights reserved. <br />
-                    Authorized medical personnel only.
-                </p>
+                {/* Footer */}
+                <div className="login-footer">
+                    <p className="footer-text">
+                        <strong>Authorized Personnel Only</strong><br />
+                        This system is for hospital staff use only. Unauthorized access is prohibited.
+                    </p>
+                </div>
             </div>
         </div>
     );

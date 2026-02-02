@@ -23,13 +23,13 @@ const Layout: React.FC = () => {
                 <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-end px-8 sticky top-0 z-10 w-full backdrop-blur-md bg-white/80">
                     <div className="flex items-center gap-4">
                         <div className="text-right">
-                            <p className="text-sm font-bold text-gray-900">{user?.email?.split('@')[0] || 'User'}</p>
+                            <p className="text-sm font-bold text-gray-900">{user?.name || 'User'}</p>
                             <p className="text-[10px] uppercase tracking-wider text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full inline-block">
                                 {user?.role}
                             </p>
                         </div>
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-200 ring-2 ring-white">
-                            {user?.email?.[0]?.toUpperCase() || 'U'}
+                            {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
                         </div>
                     </div>
                 </header>

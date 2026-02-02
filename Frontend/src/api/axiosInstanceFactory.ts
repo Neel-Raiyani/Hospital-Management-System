@@ -1,6 +1,10 @@
 import axios from 'axios';
 import type { AxiosInstance, InternalAxiosRequestConfig, AxiosError } from 'axios';
 
+interface ErrorResponse {
+    message?: string;
+}
+
 export const createAxiosInstance = (baseURL: string): AxiosInstance => {
     const api = axios.create({
         baseURL,
@@ -26,7 +30,7 @@ export const createAxiosInstance = (baseURL: string): AxiosInstance => {
     // Response interceptor for handling common errors
     api.interceptors.response.use(
         (response) => response,
-        (error: AxiosError) => {
+        (error: AxiosError<ErrorResponse>) => {
             if (error.response?.status === 401) {
                 // Handle unauthorized error (e.g., redirect to login)
                 localStorage.removeItem('token');
@@ -36,6 +40,20 @@ export const createAxiosInstance = (baseURL: string): AxiosInstance => {
                     window.location.href = '/login';
                 }
             }
+
+            // Handle 403 - Password change required
+            if (error.response?.status === 403) {
+                const message = error.response.data?.message || '';
+
+                // Check if this is a password change required error
+                if (message.toLowerCase().includes('password change required')) {
+                    // Only redirect if not already on password change page
+                    if (!window.location.pathname.includes('/change-password')) {
+                        window.location.href = '/change-password-required';
+                    }
+                }
+            }
+
             return Promise.reject(error);
         }
     );

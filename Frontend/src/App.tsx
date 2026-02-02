@@ -2,12 +2,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext.tsx';
 import { ProtectedRoute } from './components/ProtectedRoute.tsx';
 import Layout from './components/layout/Layout.tsx';
+import AdminLayout from './components/layout/AdminLayout.tsx';
 import LoginPage from './pages/LoginPage.tsx';
 import Dashboard from './pages/Dashboard.tsx';
 import Unauthorized from './pages/Unauthorized.tsx';
+import ForcePasswordChange from './pages/ForcePasswordChange.tsx';
 import AdminDashboard from './pages/admin/AdminDashboard.tsx';
-import AddDoctorPage from './pages/admin/AddDoctor.tsx';
-import AddReceptionistPage from './pages/admin/AddReceptionist.tsx';
+import StaffManagement from './pages/admin/StaffManagement.tsx';
+import Settings from './pages/admin/Settings.tsx';
 import DoctorDashboard from './pages/doctor/DoctorDashboard.tsx';
 import LabDashboard from './pages/lab/LabDashboard.tsx';
 import ReceptionistDashboard from './pages/receptionist/ReceptionistDashboard.tsx';
@@ -21,9 +23,28 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
+          {/* Public Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route path="/change-password-required" element={<ForcePasswordChange />} />
 
+          {/* Admin Routes - Standalone with AdminLayout */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="users" element={<StaffManagement />} />
+            <Route path="staff" element={<Navigate to="/admin/users" replace />} />
+            <Route path="settings" element={<Settings />} />
+            <Route index element={<Navigate to="dashboard" replace />} />
+          </Route>
+
+          {/* Main App Routes with Layout */}
           <Route
             path="/"
             element={
@@ -40,32 +61,6 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['DOCTOR', 'RECEPTIONIST', 'ADMIN', 'LAB']}>
                   <AppointmentList />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Admin Routes */}
-            <Route
-              path="admin/dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['ADMIN']}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="admin/add-doctor"
-              element={
-                <ProtectedRoute allowedRoles={['ADMIN']}>
-                  <AddDoctorPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="admin/add-receptionist"
-              element={
-                <ProtectedRoute allowedRoles={['ADMIN']}>
-                  <AddReceptionistPage />
                 </ProtectedRoute>
               }
             />

@@ -1,11 +1,12 @@
 import React, { createContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { authService } from '../api/auth.service.ts';
-import { getUserFromToken, isTokenExpired } from '../utils/jwt.ts';
+import { authService } from '../api/auth.service';
+import { getUserFromToken, isTokenExpired } from '../utils/jwt';
 import type { LoginCredentials } from '../types/auth.ts';
 
 interface User {
     id: string;
+    name: string;
     email: string;
     role: 'ADMIN' | 'DOCTOR' | 'LAB' | 'RECEPTIONIST';
     forcePasswordChange: boolean;
@@ -19,6 +20,7 @@ interface AuthContextType {
     login: (credentials: LoginCredentials) => Promise<void>;
     logout: () => void;
     checkAuth: () => boolean;
+    updateForcePasswordChange: (value: boolean) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,13 +34,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    // ... (useEffect and login/logout remain same, just ensure type compatibility) ...
     // Initialize auth state from localStorage on mount
     useEffect(() => {
         const storedToken = localStorage.getItem('token');
 
         if (storedToken && !isTokenExpired(storedToken)) {
             const userData = getUserFromToken(storedToken);
-            if (userData) {
+            // Force re-login if token is old and doesn't have name field
+            if (userData && userData.name !== 'Staff Member') {
                 setToken(storedToken);
                 setUser(userData);
             } else {
@@ -86,6 +90,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return true;
     };
 
+    const updateForcePasswordChange = (value: boolean) => {
+        if (user) {
+            setUser({ ...user, forcePasswordChange: value });
+        }
+    };
+
     const value: AuthContextType = {
         user,
         token,
@@ -94,7 +104,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         login,
         logout,
         checkAuth,
+        updateForcePasswordChange,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
+    const context = React.useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
 };
