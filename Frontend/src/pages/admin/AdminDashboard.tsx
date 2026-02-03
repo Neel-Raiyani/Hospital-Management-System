@@ -1,52 +1,62 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
     Users, Stethoscope, FlaskConical, UserCog,
-    TrendingUp, Clock, UserPlus, ArrowRight,
-    Loader2, AlertCircle, CheckCircle2, Heart, Activity, Calendar
+    Calendar, Activity
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    BarChart, Bar, Cell, PieChart, Pie
+    PieChart, Pie, Cell
 } from 'recharts';
 import { adminService, type DashboardStats } from '../../api/admin.service';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { AddUserDialog } from '../../components/admin/AddUserDialog';
 
-// Mock data for charts
-const activityData = [
-    { name: 'Mon', visits: 400, appointments: 240 },
-    { name: 'Tue', visits: 300, appointments: 139 },
-    { name: 'Wed', visits: 200, appointments: 980 },
-    { name: 'Thu', visits: 278, appointments: 390 },
-    { name: 'Fri', visits: 189, appointments: 480 },
-    { name: 'Sat', visits: 239, appointments: 380 },
-    { name: 'Sun', visits: 349, appointments: 430 },
-];
-
-const COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B'];
+const COLORS = ['#769FCD', '#B9D7EA', '#D6E6F2', '#A1C3D1'];
 
 const AdminDashboard: React.FC = () => {
-    const navigate = useNavigate();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const fetchStats = async () => {
+        try {
+            const data = await adminService.getDashboardStats();
+            setStats(data);
+        } catch (err: any) {
+            setError(err.message || 'Failed to load dashboard data');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const data = await adminService.getDashboardStats();
-                setStats(data);
-            } catch (err: any) {
-                setError(err.message || 'Failed to load dashboard data');
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchStats();
     }, []);
+
+    const handleExport = () => {
+        if (!stats) return;
+        const csvContent = [
+            ['Hospital Staff & Appointment Report', new Date().toLocaleString()],
+            ['Total Users', stats.totalUsers],
+            ['Doctors', stats.doctorCount],
+            ['Lab Staff', stats.labStaffCount],
+            ['Receptionists', stats.receptionistCount],
+            ['Admins', stats.adminCount],
+            [],
+            ['Clinic Activity (7 Days Appointments)'],
+            ...stats.appointmentsByDay.map(d => [d.name, d.appointments])
+        ].map(row => row.join(',')).join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Hospital_Report_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+    };
 
     if (loading) {
         return (
@@ -56,9 +66,24 @@ const AdminDashboard: React.FC = () => {
                     transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
                     className="mb-4"
                 >
-                    <Activity className="w-12 h-12 text-[#3B82F6]" />
+                    <Activity className="w-12 h-12 text-[#769FCD]" />
                 </motion.div>
                 <p className="text-[#6B7280] font-medium animate-pulse">Initializing Dashboard...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] p-8 text-center">
+                <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
+                    <Activity className="w-8 h-8" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Dashboard Error</h2>
+                <p className="text-gray-500 max-w-md">{error}</p>
+                <Button onClick={() => window.location.reload()} className="mt-6">
+                    Retry Loading
+                </Button>
             </div>
         );
     }
@@ -67,7 +92,6 @@ const AdminDashboard: React.FC = () => {
         { name: 'Doctors', value: stats?.doctorCount || 0 },
         { name: 'Lab Staff', value: stats?.labStaffCount || 0 },
         { name: 'Receptionists', value: stats?.receptionistCount || 0 },
-        { name: 'Admins', value: stats?.adminCount || 0 },
     ].filter(item => item.value > 0);
 
     const containerVariants = {
@@ -90,7 +114,7 @@ const AdminDashboard: React.FC = () => {
             variants={containerVariants}
             initial="hidden"
             animate="show"
-            className="p-8 max-w-[1600px] mx-auto space-y-8"
+            className="px-8 pb-8 pt-2 max-w-[1600px] mx-auto space-y-8"
         >
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -98,25 +122,22 @@ const AdminDashboard: React.FC = () => {
                     <h1 className="text-3xl font-bold text-[#111827] tracking-tight">Hospital Analytics</h1>
                     <p className="text-[#6B7280] mt-1 flex items-center gap-2">
                         <Calendar className="w-4 h-4" />
-                        Monday, 02 February 2026
+                        {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
                     </p>
                 </motion.div>
                 <motion.div variants={itemVariants} className="flex gap-2">
-                    <Button variant="outline" className="hidden sm:flex">Export Report</Button>
-                    <Button onClick={() => navigate('/admin/users')}>
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Add New User
-                    </Button>
+                    <Button variant="outline" className="hidden sm:flex" onClick={handleExport}>Export Report</Button>
+                    <AddUserDialog onSuccess={fetchStats} />
                 </motion.div>
             </div>
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                    { label: 'Total Users', value: stats?.totalUsers || 0, icon: Users, color: '#3B82F6', trend: '+12%' },
-                    { label: 'Doctors', value: stats?.doctorCount || 0, icon: Stethoscope, color: '#10B981', trend: '+5%' },
-                    { label: 'Lab Staff', value: stats?.labStaffCount || 0, icon: FlaskConical, color: '#8B5CF6', trend: 'stable' },
-                    { label: 'Receptionists', value: stats?.receptionistCount || 0, icon: UserCog, color: '#F59E0B', trend: '-2%' },
+                    { label: 'Total Users', value: stats?.totalUsers || 0, icon: Users, color: '#769FCD', trend: '+12%' },
+                    { label: 'Doctors', value: stats?.doctorCount || 0, icon: Stethoscope, color: '#B9D7EA', trend: '+5%' },
+                    { label: 'Lab Staff', value: stats?.labStaffCount || 0, icon: FlaskConical, color: '#769FCD', trend: 'stable' },
+                    { label: 'Receptionists', value: stats?.receptionistCount || 0, icon: UserCog, color: '#B9D7EA', trend: '-2%' },
                 ].map((stat, idx) => (
                     <motion.div key={idx} variants={itemVariants}>
                         <Card className="hover:shadow-md transition-shadow">
@@ -145,33 +166,44 @@ const AdminDashboard: React.FC = () => {
                 <motion.div variants={itemVariants} className="lg:col-span-2">
                     <Card className="h-full">
                         <CardHeader>
-                            <CardTitle>System Activity</CardTitle>
-                            <CardDescription>Daily visits and appointments across all services</CardDescription>
+                            <CardTitle>Clinic Activity</CardTitle>
+                            <CardDescription>Daily appointments over the last 7 days</CardDescription>
                         </CardHeader>
-                        <CardContent className="h-[350px] pr-8">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={activityData}>
-                                    <defs>
-                                        <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} dy={10} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                    />
-                                    <Area type="monotone" dataKey="visits" stroke="#3B82F6" strokeWidth={2} fillOpacity={1} fill="url(#colorVisits)" />
-                                    <Area type="monotone" dataKey="appointments" stroke="#10B981" strokeWidth={2} fillOpacity={0} />
-                                </AreaChart>
-                            </ResponsiveContainer>
+                        <CardContent className="pr-8">
+                            <div className="h-[350px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={stats?.appointmentsByDay || []}>
+                                        <defs>
+                                            <linearGradient id="colorApps" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#769FCD" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="#769FCD" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} dy={10} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #D6E6F2', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                            labelStyle={{ color: '#1E293B', fontWeight: 'bold' }}
+                                        />
+                                        <Area
+                                            name="Daily Appointments"
+                                            type="monotone"
+                                            dataKey="appointments"
+                                            stroke="#769FCD"
+                                            strokeWidth={3}
+                                            fillOpacity={1}
+                                            fill="url(#colorApps)"
+                                            animationDuration={1500}
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
                         </CardContent>
                     </Card>
                 </motion.div>
 
-                {/* Staff Distribution */}
+                {/* Staff Distribution (Formerly role allocation) */}
                 <motion.div variants={itemVariants}>
                     <Card className="h-full">
                         <CardHeader>
@@ -207,104 +239,6 @@ const AdminDashboard: React.FC = () => {
                                     </div>
                                 ))}
                             </div>
-                        </CardContent>
-                    </Card>
-                </motion.div>
-            </div>
-
-            {/* Bottom Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* System Status */}
-                <motion.div variants={itemVariants}>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Activity className="w-5 h-5 text-[#3B82F6]" />
-                                Service Connectivity
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {[
-                                { name: 'Auth Service', time: '12ms' },
-                                { name: 'Patient Management', time: '24ms' },
-                                { name: 'Lab Inventory', time: '18ms' },
-                                { name: 'Appointment Sync', time: '15ms' },
-                            ].map((service, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-3 bg-[#F9FAFB] rounded-xl border border-[#E5E7EB]">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
-                                        <span className="text-sm font-semibold text-[#374151]">{service.name}</span>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <span className="text-xs font-medium text-[#6B7280]">{service.time}</span>
-                                        <Badge variant="success" className="bg-[#D1FAE5] text-[#065F46] border-none">Active</Badge>
-                                    </div>
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
-                </motion.div>
-
-                {/* Quick Actions */}
-                <motion.div variants={itemVariants}>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Management Shortcuts</CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Button
-                                variant="outline"
-                                className="h-auto p-4 flex flex-col items-start gap-1 text-left border-[#DBEAFE] bg-[#EFF6FF] hover:bg-[#DBEAFE] transition-colors"
-                                onClick={() => navigate('/admin/users')}
-                            >
-                                <div className="p-2 rounded-lg bg-white text-[#3B82F6] border border-[#BFDBFE]">
-                                    <UserPlus className="w-4 h-4" />
-                                </div>
-                                <div className="mt-2">
-                                    <p className="font-bold text-[#1E40AF]">User Access</p>
-                                    <p className="text-xs text-[#3B82F6]">Provision new staff</p>
-                                </div>
-                            </Button>
-
-                            <Button
-                                variant="outline"
-                                className="h-auto p-4 flex flex-col items-start gap-1 text-left border-[#FDE68A] bg-[#FFFBEB] hover:bg-[#FEF3C7] transition-colors"
-                                onClick={() => navigate('/admin/settings')}
-                            >
-                                <div className="p-2 rounded-lg bg-white text-[#F59E0B] border border-[#FDE68A]">
-                                    <Clock className="w-4 h-4" />
-                                </div>
-                                <div className="mt-2">
-                                    <p className="font-bold text-[#92400E]">System Config</p>
-                                    <p className="text-xs text-[#F59E0B]">Global settings</p>
-                                </div>
-                            </Button>
-
-                            <Button
-                                variant="outline"
-                                className="h-auto p-4 flex flex-col items-start gap-1 text-left border-[#D1FAE5] bg-[#ECFDF5] hover:bg-[#D1FAE5] transition-colors"
-                            >
-                                <div className="p-2 rounded-lg bg-white text-[#10B981] border border-[#A7F3D0]">
-                                    <Heart className="w-4 h-4" />
-                                </div>
-                                <div className="mt-2">
-                                    <p className="font-bold text-[#065F46]">Clinic Flow</p>
-                                    <p className="text-xs text-[#10B981]">Manage OPD slots</p>
-                                </div>
-                            </Button>
-
-                            <Button
-                                variant="outline"
-                                className="h-auto p-4 flex flex-col items-start gap-1 text-left border-[#DDD6FE] bg-[#F5F3FF] hover:bg-[#EDE9FE] transition-colors"
-                            >
-                                <div className="p-2 rounded-lg bg-white text-[#8B5CF6] border border-[#DDD6FE]">
-                                    <Activity className="w-4 h-4" />
-                                </div>
-                                <div className="mt-2">
-                                    <p className="font-bold text-[#5B21B6]">Audit Logs</p>
-                                    <p className="text-xs text-[#8B5CF6]">Security history</p>
-                                </div>
-                            </Button>
                         </CardContent>
                     </Card>
                 </motion.div>

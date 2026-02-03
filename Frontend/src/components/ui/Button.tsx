@@ -14,12 +14,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         const Comp = asChild ? Slot : "button"
 
         const variants = {
-            default: "bg-[#3B82F6] text-white hover:bg-[#2563EB] shadow-sm",
+            default: "bg-[#769FCD] text-white hover:bg-[#608FBF] shadow-sm",
             destructive: "bg-[#EF4444] text-white hover:bg-[#DC2626] shadow-sm",
             outline: "border border-[#E5E7EB] bg-white hover:bg-[#F9FAFB] text-[#374151]",
             secondary: "bg-[#F3F4F6] text-[#111827] hover:bg-[#E5E7EB]",
             ghost: "hover:bg-[#F3F4F6] text-[#6B7280] hover:text-[#111827]",
-            link: "text-[#3B82F6] underline-offset-4 hover:underline",
+            link: "text-[#769FCD] underline-offset-4 hover:underline",
         }
 
         const sizes = {
@@ -32,7 +32,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         return (
             <Comp
                 className={cn(
-                    "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+                    "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#769FCD] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
                     variants[variant],
                     sizes[size],
                     className

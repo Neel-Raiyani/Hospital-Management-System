@@ -33,11 +33,11 @@ const Settings: React.FC = () => {
             variants={containerVariants}
             initial="hidden"
             animate="show"
-            className="p-8 max-w-[1200px] mx-auto space-y-8"
+            className="px-8 pb-8 pt-2 max-w-[1200px] mx-auto space-y-8"
         >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-[#111827]">System Configuration</h1>
+                    <h1 className="text-3xl font-bold text-[#111827] tracking-tight">System Configuration</h1>
                     <p className="text-[#6B7280] mt-1">Fine-tune hospital infrastructure and security protocols</p>
                 </div>
                 <div className="flex items-center gap-4">
@@ -54,7 +54,7 @@ const Settings: React.FC = () => {
                     <Button
                         onClick={handleSave}
                         disabled={saving}
-                        className="h-11 px-6 bg-[#111827] hover:bg-black rounded-xl shadow-lg border-none"
+                        className="h-11 px-6 bg-[#769FCD] hover:bg-[#608FBF] rounded-xl shadow-lg border-none"
                     >
                         {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                         Apply Changes
@@ -63,7 +63,7 @@ const Settings: React.FC = () => {
             </div>
 
             <Tabs defaultValue="hospital" className="w-full space-y-8">
-                <TabsList className="bg-[#F1F5F9] p-1.5 h-auto rounded-2xl border border-[#E2E8F0]">
+                <TabsList className="bg-[#D6E6F2] p-1.5 h-auto rounded-2xl border border-[#B9D7EA]">
                     <TabsTrigger value="hospital" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-md">
                         <Globe2 className="w-4 h-4 mr-2" /> Hospital Identity
                     </TabsTrigger>
@@ -91,25 +91,25 @@ const Settings: React.FC = () => {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Institution Name</label>
-                                            <Input defaultValue="City General Hospital & Research Center" className="border-[#E2E8F0] h-12 rounded-xl" />
+                                            <Input defaultValue="City General Hospital & Research Center" className="border-[#B9D7EA] h-12 rounded-xl" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Primary Language</label>
-                                            <Input defaultValue="English (US)" className="border-[#E2E8F0] h-12 rounded-xl" />
+                                            <Input defaultValue="English (US)" className="border-[#B9D7EA] h-12 rounded-xl" />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Clinical Tagline</label>
-                                        <Input defaultValue="Advancing Healthcare, Together." className="border-[#E2E8F0] h-12 rounded-xl" />
+                                        <Input defaultValue="Advancing Healthcare, Together." className="border-[#B9D7EA] h-12 rounded-xl" />
                                     </div>
-                                    <div className="pt-4 flex items-center gap-6 border-t border-[#F1F5F9]">
-                                        <div className="w-16 h-16 bg-[#F8FAFC] rounded-2xl border-2 border-dashed border-[#CBD5E1] flex items-center justify-center text-[#94A3B8]">
+                                    <div className="pt-4 flex items-center gap-6 border-t border-[#B9D7EA]">
+                                        <div className="w-16 h-16 bg-[#F7FBFC] rounded-2xl border-2 border-dashed border-[#CBD5E1] flex items-center justify-center text-[#94A3B8]">
                                             <Cloud size={24} />
                                         </div>
                                         <div>
                                             <p className="text-sm font-bold text-[#1E293B]">Official Seal / Logo</p>
                                             <p className="text-xs text-[#64748B] mt-1">Recommended: 400x400px, PNG or SVG</p>
-                                            <Button variant="link" size="sm" className="px-0 mt-1 h-auto font-bold text-[#3B82F6]">Upload new...</Button>
+                                            <Button variant="link" size="sm" className="px-0 mt-1 h-auto font-bold text-[#769FCD]">Upload new...</Button>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -128,9 +128,9 @@ const Settings: React.FC = () => {
                         <div className="md:col-span-2 space-y-6">
                             <Card className="border-none shadow-xl rounded-2xl">
                                 <CardContent className="p-8 space-y-8">
-                                    <div className="flex items-center justify-between group cursor-pointer p-4 rounded-2xl hover:bg-[#F8FAFC] transition-colors border border-transparent hover:border-[#F1F5F9]">
+                                    <div className="flex items-center justify-between group cursor-pointer p-4 rounded-2xl hover:bg-[#F7FBFC] transition-colors border border-transparent hover:border-[#B9D7EA]">
                                         <div className="flex items-start gap-4">
-                                            <div className="p-2 rounded-xl bg-[#EFF6FF] text-[#3B82F6] group-hover:scale-110 transition-transform">
+                                            <div className="p-2 rounded-xl bg-[#D6E6F2] text-[#769FCD] group-hover:scale-110 transition-transform">
                                                 <UserCheck size={20} />
                                             </div>
                                             <div>
@@ -138,12 +138,12 @@ const Settings: React.FC = () => {
                                                 <p className="text-sm text-[#64748B] mt-0.5">Force all practitioners to use verified secondary devices.</p>
                                             </div>
                                         </div>
-                                        <div className="w-12 h-6 bg-[#3B82F6] rounded-full relative">
+                                        <div className="w-12 h-6 bg-[#769FCD] rounded-full relative">
                                             <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm" />
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between group cursor-pointer p-4 rounded-2xl hover:bg-[#F8FAFC] transition-colors border border-transparent hover:border-[#F1F5F9]">
+                                    <div className="flex items-center justify-between group cursor-pointer p-4 rounded-2xl hover:bg-[#F7FBFC] transition-colors border border-transparent hover:border-[#B9D7EA]">
                                         <div className="flex items-start gap-4">
                                             <div className="p-2 rounded-xl bg-[#FFF7ED] text-[#F59E0B] group-hover:scale-110 transition-transform">
                                                 <Lock size={20} />
@@ -158,12 +158,12 @@ const Settings: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    <div className="pt-6 border-t border-[#F1F5F9]">
+                                    <div className="pt-6 border-t border-[#B9D7EA]">
                                         <p className="text-[10px] font-bold text-[#64748B] uppercase tracking-widest mb-4">Password Requirements</p>
                                         <div className="flex flex-wrap gap-2">
                                             <Badge variant="secondary" className="rounded-lg py-1 px-3">Min. 12 Characters</Badge>
-                                            <Badge variant="outline" className="rounded-lg py-1 px-3 border-[#E2E8F0]">Complexity Filter</Badge>
-                                            <Badge variant="outline" className="rounded-lg py-1 px-3 border-[#E2E8F0]">No Reuse (prev 5)</Badge>
+                                            <Badge variant="outline" className="rounded-lg py-1 px-3 border-[#B9D7EA]">Complexity Filter</Badge>
+                                            <Badge variant="outline" className="rounded-lg py-1 px-3 border-[#B9D7EA]">No Reuse (prev 5)</Badge>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -183,24 +183,24 @@ const Settings: React.FC = () => {
                             <Card className="border-none shadow-xl rounded-2xl">
                                 <CardHeader className="p-8 pb-4">
                                     <CardTitle className="text-base flex items-center gap-2">
-                                        <Mail className="w-4 h-4 text-[#3B82F6]" /> SMTP Configuration
+                                        <Mail className="w-4 h-4 text-[#769FCD]" /> SMTP Configuration
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-8 pt-0 space-y-6">
                                     <div className="grid grid-cols-2 gap-6">
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Host Relay</label>
-                                            <Input defaultValue="smtp.hospital.private" className="border-[#E2E8F0] h-12 rounded-xl" />
+                                            <Input defaultValue="smtp.hospital.private" className="border-[#B9D7EA] h-12 rounded-xl" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Auth Method</label>
-                                            <Input defaultValue="SSL/TLS (Port 465)" className="border-[#E2E8F0] h-12 rounded-xl" />
+                                            <Input defaultValue="SSL/TLS (Port 465)" className="border-[#B9D7EA] h-12 rounded-xl" />
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3 p-4 bg-[#F8FAFC] rounded-2xl border border-[#F1F5F9]">
+                                    <div className="flex items-center gap-3 p-4 bg-[#F7FBFC] rounded-2xl border border-[#B9D7EA]">
                                         <AtSign size={18} className="text-[#94A3B8]" />
                                         <span className="text-sm font-bold text-[#475569]">Broadcasts will originate from: </span>
-                                        <span className="text-sm font-mono text-[#3B82F6]">noreply@hospital-msg.com</span>
+                                        <span className="text-sm font-mono text-[#769FCD]">noreply@hospital-msg.com</span>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -228,25 +228,25 @@ const Settings: React.FC = () => {
                                                 <p className="text-xs text-[#6B7280]">Region: us-east-1a (Active)</p>
                                             </div>
                                         </div>
-                                        <Button variant="outline" size="sm" className="h-9 rounded-xl border-[#E2E8F0]"><RefreshCw size={14} className="mr-2" /> Redundancy Check</Button>
+                                        <Button variant="outline" size="sm" className="h-9 rounded-xl border-[#B9D7EA]"><RefreshCw size={14} className="mr-2" /> Redundancy Check</Button>
                                     </div>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#F1F5F9]">
+                                        <div className="p-4 rounded-2xl bg-[#F7FBFC] border border-[#B9D7EA]">
                                             <p className="text-[10px] font-bold text-[#94A3B8] uppercase">Latency</p>
                                             <p className="text-xl font-bold text-[#1E293B] mt-1">~14ms</p>
                                         </div>
-                                        <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#F1F5F9]">
+                                        <div className="p-4 rounded-2xl bg-[#F7FBFC] border border-[#B9D7EA]">
                                             <p className="text-[10px] font-bold text-[#94A3B8] uppercase">Uptime</p>
                                             <p className="text-xl font-bold text-[#10B981] mt-1">99.992%</p>
                                         </div>
-                                        <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#F1F5F9]">
+                                        <div className="p-4 rounded-2xl bg-[#F7FBFC] border border-[#B9D7EA]">
                                             <p className="text-[10px] font-bold text-[#94A3B8] uppercase">Req/Sec</p>
-                                            <p className="text-xl font-bold text-[#3B82F6] mt-1">2.4k</p>
+                                            <p className="text-xl font-bold text-[#769FCD] mt-1">2.4k</p>
                                         </div>
                                     </div>
                                 </CardContent>
-                                <div className="p-4 bg-[#F1F5F9] border-t border-[#E2E8F0] flex justify-center">
+                                <div className="p-4 bg-[#D6E6F2] border-t border-[#B9D7EA] flex justify-center">
                                     <p className="text-[10px] font-bold text-[#64748B] flex items-center gap-2">
                                         <Monitor size={12} /> SYSTEM CLUSTER V2.14.0-STABLE
                                     </p>

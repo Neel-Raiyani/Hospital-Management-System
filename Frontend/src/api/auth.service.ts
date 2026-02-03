@@ -77,4 +77,9 @@ export const authService = {
         const response = await authApi.patch(`/auth/users/${userId}/status`, { isActive });
         return response.data;
     },
+    getUserProfile: async (userId?: string): Promise<StaffUser> => {
+        const url = userId ? `/auth/users/profile/${userId}` : '/auth/users/profile';
+        const response = await authApi.get(url);
+        return response.data;
+    },
 };

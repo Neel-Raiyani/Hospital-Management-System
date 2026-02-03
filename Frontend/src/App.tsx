@@ -4,12 +4,12 @@ import { ProtectedRoute } from './components/ProtectedRoute.tsx';
 import Layout from './components/layout/Layout.tsx';
 import AdminLayout from './components/layout/AdminLayout.tsx';
 import LoginPage from './pages/LoginPage.tsx';
-import Dashboard from './pages/Dashboard.tsx';
 import Unauthorized from './pages/Unauthorized.tsx';
 import ForcePasswordChange from './pages/ForcePasswordChange.tsx';
 import AdminDashboard from './pages/admin/AdminDashboard.tsx';
 import StaffManagement from './pages/admin/StaffManagement.tsx';
 import Settings from './pages/admin/Settings.tsx';
+import Profile from './pages/Profile.tsx';
 import DoctorDashboard from './pages/doctor/DoctorDashboard.tsx';
 import LabDashboard from './pages/lab/LabDashboard.tsx';
 import ReceptionistDashboard from './pages/receptionist/ReceptionistDashboard.tsx';
@@ -41,6 +41,8 @@ function App() {
             <Route path="users" element={<StaffManagement />} />
             <Route path="staff" element={<Navigate to="/admin/users" replace />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="profile/:userId" element={<Profile />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 
@@ -53,7 +55,8 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Dashboard />} />
+            <Route index element={<Navigate to="/login" replace />} />
+            <Route path="profile" element={<Profile />} />
 
             {/* Shared Routes */}
             <Route
