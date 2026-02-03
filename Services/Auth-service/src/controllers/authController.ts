@@ -278,3 +278,46 @@ export const updateUserStatus = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to update user status" });
   }
 };
+export const getUserProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.userId || req.user?.userId;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    let roleData = null;
+    if (user.role === "DOCTOR") {
+      roleData = await prisma.doctor.findUnique({ where: { userId: user.id } });
+    } else if (user.role === "RECEPTIONIST") {
+      roleData = await prisma.receptionist.findUnique({ where: { userId: user.id } });
+    } else if (user.role === "LAB") {
+      roleData = await prisma.labStaff.findUnique({ where: { userId: user.id } });
+    }
+
+    res.status(200).json({
+      ...user,
+      status: user.isActive ? 'ACTIVE' : 'INACTIVE',
+      ...(roleData || {}),
+    });
+  } catch (error) {
+    logger.error(`Get user profile error | error=${(error as Error).message}`);
+    res.status(500).json({ message: "Failed to fetch user profile" });
+  }
+};

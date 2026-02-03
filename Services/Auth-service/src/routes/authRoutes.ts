@@ -1,5 +1,5 @@
 import express from "express";
-import { login, createUser, changePassword, getUsers, updateUserStatus } from "@controllers/authController.js"
+import { login, createUser, changePassword, getUsers, updateUserStatus, getUserProfile } from "@controllers/authController.js"
 import { auth } from "@middlewares/auth.js";
 import { role } from "@middlewares/role.js";
 import { createUserValidation, loginValidation, changePasswordValidation, validate } from "@middlewares/validation.js";
@@ -10,6 +10,8 @@ router.post('/create', auth, role("ADMIN"), createUserValidation, validate, crea
 router.post('/login', loginValidation, validate, login);
 router.get('/users', auth, role("ADMIN"), getUsers);
 router.patch('/users/:userId/status', auth, role("ADMIN"), updateUserStatus);
+router.get('/users/profile', auth, getUserProfile);
+router.get('/users/profile/:userId', auth, getUserProfile);
 
 router.patch('/change-password', auth, changePasswordValidation, validate, changePassword);
 
