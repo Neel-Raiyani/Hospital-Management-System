@@ -1,23 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-    Save, Bell, Lock, Database, Loader2, CheckCircle,
-    ShieldAlert, UserCheck, Cloud, Mail, AtSign, Globe2,
-    Monitor, Zap, RefreshCw
+    Save, Bell, Lock, Loader2, CheckCircle,
+    Building2, Mail, ShieldCheck, Globe
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/Tabs';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 
+interface SystemSettings {
+    hospitalName: string;
+    hospitalTagline: string;
+    primaryLanguage: string;
+    sessionTimeout: string;
+    enableMFA: boolean;
+    emailNotifications: boolean;
+    systemAlerts: boolean;
+}
+
 const Settings: React.FC = () => {
+    const [settings, setSettings] = useState<SystemSettings>({
+        hospitalName: 'City General Hospital & Research Center',
+        hospitalTagline: 'Advancing Healthcare, Together.',
+        primaryLanguage: 'English (US)',
+        sessionTimeout: '30',
+        enableMFA: true,
+        emailNotifications: true,
+        systemAlerts: true,
+    });
+
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
 
+    // Initial load from localStorage
+    useEffect(() => {
+        const savedSettings = localStorage.getItem('adminSystemSettings');
+        if (savedSettings) {
+            setSettings(JSON.parse(savedSettings));
+        }
+    }, []);
+
     const handleSave = async () => {
         setSaving(true);
+        // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 800));
+        localStorage.setItem('adminSystemSettings', JSON.stringify(settings));
         setSaving(false);
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
@@ -28,17 +56,30 @@ const Settings: React.FC = () => {
         show: { opacity: 1, y: 0, transition: { duration: 0.4 } }
     };
 
+    const SectionHeader = ({ icon: Icon, title, description, color }: any) => (
+        <div className="flex items-start gap-4 mb-6">
+            <div className={`p-3 rounded-2xl bg-white shadow-sm border border-gray-100 text-[${color}]`}>
+                <Icon size={24} />
+            </div>
+            <div>
+                <h3 className="text-lg font-bold text-[#1E293B]">{title}</h3>
+                <p className="text-sm text-[#64748B]">{description}</p>
+            </div>
+        </div>
+    );
+
     return (
         <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="show"
-            className="px-8 pb-8 pt-2 max-w-[1200px] mx-auto space-y-8"
+            className="px-8 pb-8 pt-2 max-w-[1600px] mx-auto space-y-8"
         >
+            {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-[#111827] tracking-tight">System Configuration</h1>
-                    <p className="text-[#6B7280] mt-1">Fine-tune hospital infrastructure and security protocols</p>
+                    <h1 className="text-3xl font-bold text-[#111827] tracking-tight">System Settings</h1>
+                    <p className="text-[#6B7280] mt-1">Manage hospital information and system preferences</p>
                 </div>
                 <div className="flex items-center gap-4">
                     {saved && (
@@ -48,214 +89,156 @@ const Settings: React.FC = () => {
                             className="flex items-center gap-2 text-[#10B981] bg-[#ECFDF5] px-3 py-1.5 rounded-full text-xs font-bold border border-[#D1FAE5]"
                         >
                             <CheckCircle size={14} />
-                            State Synced
+                            Settings Saved
                         </motion.div>
                     )}
                     <Button
                         onClick={handleSave}
                         disabled={saving}
-                        className="h-11 px-6 bg-[#769FCD] hover:bg-[#608FBF] rounded-xl shadow-lg border-none"
+                        className="h-11 px-8 bg-[#769FCD] hover:bg-[#608FBF] rounded-xl shadow-lg border-none font-bold"
                     >
                         {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                        Apply Changes
+                        Save Changes
                     </Button>
                 </div>
             </div>
 
-            <Tabs defaultValue="hospital" className="w-full space-y-8">
-                <TabsList className="bg-[#D6E6F2] p-1.5 h-auto rounded-2xl border border-[#B9D7EA]">
-                    <TabsTrigger value="hospital" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-md">
-                        <Globe2 className="w-4 h-4 mr-2" /> Hospital Identity
-                    </TabsTrigger>
-                    <TabsTrigger value="security" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-md">
-                        <ShieldAlert className="w-4 h-4 mr-2" /> Security & Access
-                    </TabsTrigger>
-                    <TabsTrigger value="notifications" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-md">
-                        <Bell className="w-4 h-4 mr-2" /> Communications
-                    </TabsTrigger>
-                    <TabsTrigger value="infrastructure" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-md">
-                        <Zap className="w-4 h-4 mr-2" /> API & Infrastructure
-                    </TabsTrigger>
-                </TabsList>
-
-                {/* Hospital Identity */}
-                <TabsContent value="hospital">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="space-y-2">
-                            <h3 className="font-bold text-[#1E293B]">Hospital Info</h3>
-                            <p className="text-sm text-[#64748B]">These details appear on clinical reports and patient documents.</p>
-                        </div>
-                        <div className="md:col-span-2 space-y-6">
-                            <Card className="border-none shadow-xl rounded-2xl overflow-hidden">
-                                <CardContent className="p-8 space-y-6">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Institution Name</label>
-                                            <Input defaultValue="City General Hospital & Research Center" className="border-[#B9D7EA] h-12 rounded-xl" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Primary Language</label>
-                                            <Input defaultValue="English (US)" className="border-[#B9D7EA] h-12 rounded-xl" />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Clinical Tagline</label>
-                                        <Input defaultValue="Advancing Healthcare, Together." className="border-[#B9D7EA] h-12 rounded-xl" />
-                                    </div>
-                                    <div className="pt-4 flex items-center gap-6 border-t border-[#B9D7EA]">
-                                        <div className="w-16 h-16 bg-[#F7FBFC] rounded-2xl border-2 border-dashed border-[#CBD5E1] flex items-center justify-center text-[#94A3B8]">
-                                            <Cloud size={24} />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-[#1E293B]">Official Seal / Logo</p>
-                                            <p className="text-xs text-[#64748B] mt-1">Recommended: 400x400px, PNG or SVG</p>
-                                            <Button variant="link" size="sm" className="px-0 mt-1 h-auto font-bold text-[#769FCD]">Upload new...</Button>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </div>
-                </TabsContent>
-
-                {/* Security */}
-                <TabsContent value="security">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="space-y-2">
-                            <h3 className="font-bold text-[#1E293B]">Security Policy</h3>
-                            <p className="text-sm text-[#64748B]">Configure authentication thresholds and clinical privacy settings.</p>
-                        </div>
-                        <div className="md:col-span-2 space-y-6">
-                            <Card className="border-none shadow-xl rounded-2xl">
-                                <CardContent className="p-8 space-y-8">
-                                    <div className="flex items-center justify-between group cursor-pointer p-4 rounded-2xl hover:bg-[#F7FBFC] transition-colors border border-transparent hover:border-[#B9D7EA]">
-                                        <div className="flex items-start gap-4">
-                                            <div className="p-2 rounded-xl bg-[#D6E6F2] text-[#769FCD] group-hover:scale-110 transition-transform">
-                                                <UserCheck size={20} />
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-[#1E293B]">Multi-Factor Authentication (MFA)</p>
-                                                <p className="text-sm text-[#64748B] mt-0.5">Force all practitioners to use verified secondary devices.</p>
-                                            </div>
-                                        </div>
-                                        <div className="w-12 h-6 bg-[#769FCD] rounded-full relative">
-                                            <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm" />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between group cursor-pointer p-4 rounded-2xl hover:bg-[#F7FBFC] transition-colors border border-transparent hover:border-[#B9D7EA]">
-                                        <div className="flex items-start gap-4">
-                                            <div className="p-2 rounded-xl bg-[#FFF7ED] text-[#F59E0B] group-hover:scale-110 transition-transform">
-                                                <Lock size={20} />
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-[#1E293B]">Automated Session Lock</p>
-                                                <p className="text-sm text-[#64748B] mt-0.5">Log out practitioners after 30 minutes of idle time.</p>
-                                            </div>
-                                        </div>
-                                        <div className="w-12 h-6 bg-[#E2E8F0] rounded-full relative">
-                                            <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm" />
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-6 border-t border-[#B9D7EA]">
-                                        <p className="text-[10px] font-bold text-[#64748B] uppercase tracking-widest mb-4">Password Requirements</p>
-                                        <div className="flex flex-wrap gap-2">
-                                            <Badge variant="secondary" className="rounded-lg py-1 px-3">Min. 12 Characters</Badge>
-                                            <Badge variant="outline" className="rounded-lg py-1 px-3 border-[#B9D7EA]">Complexity Filter</Badge>
-                                            <Badge variant="outline" className="rounded-lg py-1 px-3 border-[#B9D7EA]">No Reuse (prev 5)</Badge>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </div>
-                </TabsContent>
-
-                {/* Notifications */}
-                <TabsContent value="notifications">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="space-y-2">
-                            <h3 className="font-bold text-[#1E293B]">Outbound Comms</h3>
-                            <p className="text-sm text-[#64748B]">Manage how the system interacts with staff and patients.</p>
-                        </div>
-                        <div className="md:col-span-2 space-y-6">
-                            <Card className="border-none shadow-xl rounded-2xl">
-                                <CardHeader className="p-8 pb-4">
-                                    <CardTitle className="text-base flex items-center gap-2">
-                                        <Mail className="w-4 h-4 text-[#769FCD]" /> SMTP Configuration
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-8 pt-0 space-y-6">
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Host Relay</label>
-                                            <Input defaultValue="smtp.hospital.private" className="border-[#B9D7EA] h-12 rounded-xl" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Auth Method</label>
-                                            <Input defaultValue="SSL/TLS (Port 465)" className="border-[#B9D7EA] h-12 rounded-xl" />
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3 p-4 bg-[#F7FBFC] rounded-2xl border border-[#B9D7EA]">
-                                        <AtSign size={18} className="text-[#94A3B8]" />
-                                        <span className="text-sm font-bold text-[#475569]">Broadcasts will originate from: </span>
-                                        <span className="text-sm font-mono text-[#769FCD]">noreply@hospital-msg.com</span>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </div>
-                </TabsContent>
-
-                {/* Infrastructure */}
-                <TabsContent value="infrastructure">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="space-y-2">
-                            <h3 className="font-bold text-[#1E293B]">Engine Health</h3>
-                            <p className="text-sm text-[#64748B]">Internal microservice routing and cloud maintenance.</p>
-                        </div>
-                        <div className="md:col-span-2 space-y-6">
-                            <Card className="border-none shadow-xl rounded-2xl overflow-hidden">
-                                <CardContent className="p-8 space-y-8">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex gap-4">
-                                            <div className="w-12 h-12 rounded-2xl bg-[#F0FDF4] flex items-center justify-center text-[#10B981]">
-                                                <Database size={24} />
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-[#1E293B]">Main Instance Pool</p>
-                                                <p className="text-xs text-[#6B7280]">Region: us-east-1a (Active)</p>
-                                            </div>
-                                        </div>
-                                        <Button variant="outline" size="sm" className="h-9 rounded-xl border-[#B9D7EA]"><RefreshCw size={14} className="mr-2" /> Redundancy Check</Button>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        <div className="p-4 rounded-2xl bg-[#F7FBFC] border border-[#B9D7EA]">
-                                            <p className="text-[10px] font-bold text-[#94A3B8] uppercase">Latency</p>
-                                            <p className="text-xl font-bold text-[#1E293B] mt-1">~14ms</p>
-                                        </div>
-                                        <div className="p-4 rounded-2xl bg-[#F7FBFC] border border-[#B9D7EA]">
-                                            <p className="text-[10px] font-bold text-[#94A3B8] uppercase">Uptime</p>
-                                            <p className="text-xl font-bold text-[#10B981] mt-1">99.992%</p>
-                                        </div>
-                                        <div className="p-4 rounded-2xl bg-[#F7FBFC] border border-[#B9D7EA]">
-                                            <p className="text-[10px] font-bold text-[#94A3B8] uppercase">Req/Sec</p>
-                                            <p className="text-xl font-bold text-[#769FCD] mt-1">2.4k</p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                                <div className="p-4 bg-[#D6E6F2] border-t border-[#B9D7EA] flex justify-center">
-                                    <p className="text-[10px] font-bold text-[#64748B] flex items-center gap-2">
-                                        <Monitor size={12} /> SYSTEM CLUSTER V2.14.0-STABLE
-                                    </p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Hospital Details */}
+                <div className="space-y-6">
+                    <SectionHeader
+                        icon={Building2}
+                        title="Hospital Profile"
+                        description="Basic information about your institution."
+                        color="#769FCD"
+                    />
+                    <Card className="border-none shadow-sm rounded-3xl bg-white/50 backdrop-blur-sm">
+                        <CardContent className="p-8 space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Hospital Name</label>
+                                <Input
+                                    value={settings.hospitalName}
+                                    onChange={(e) => setSettings({ ...settings, hospitalName: e.target.value })}
+                                    className="border-[#B9D7EA] h-12 rounded-xl bg-white"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Tagline</label>
+                                <Input
+                                    value={settings.hospitalTagline}
+                                    onChange={(e) => setSettings({ ...settings, hospitalTagline: e.target.value })}
+                                    className="border-[#B9D7EA] h-12 rounded-xl bg-white"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Primary Language</label>
+                                <div className="relative">
+                                    <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={18} />
+                                    <Input
+                                        value={settings.primaryLanguage}
+                                        onChange={(e) => setSettings({ ...settings, primaryLanguage: e.target.value })}
+                                        className="pl-11 border-[#B9D7EA] h-12 rounded-xl bg-white"
+                                    />
                                 </div>
-                            </Card>
-                        </div>
-                    </div>
-                </TabsContent>
-            </Tabs>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* System Preferences */}
+                <div className="space-y-6">
+                    <SectionHeader
+                        icon={ShieldCheck}
+                        title="Security & Access"
+                        description="Manage authentication and session policies."
+                        color="#769FCD"
+                    />
+                    <Card className="border-none shadow-sm rounded-3xl bg-white/50 backdrop-blur-sm">
+                        <CardContent className="p-8 space-y-8">
+                            <div className="flex items-center justify-between p-4 rounded-2xl bg-white border border-[#B9D7EA]/50">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2 rounded-xl bg-blue-50 text-[#769FCD]">
+                                        <Lock size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-[#1E293B]">Extra Login Security (MFA)</p>
+                                        <p className="text-xs text-[#64748B]">Require a code for all staff logins</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setSettings({ ...settings, enableMFA: !settings.enableMFA })}
+                                    className={`w-12 h-6 rounded-full transition-all duration-300 relative ${settings.enableMFA ? 'bg-[#769FCD]' : 'bg-gray-200'}`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${settings.enableMFA ? 'right-1' : 'left-1'}`} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Session Timeout (minutes)</label>
+                                <Input
+                                    type="number"
+                                    value={settings.sessionTimeout}
+                                    onChange={(e) => setSettings({ ...settings, sessionTimeout: e.target.value })}
+                                    className="border-[#B9D7EA] h-12 rounded-xl bg-white"
+                                />
+                                <div className="flex flex-wrap gap-2">
+                                    <Badge variant="outline" className="rounded-lg py-1 px-3 border-[#B9D7EA] text-[#769FCD]">Min. 12 Characters</Badge>
+                                    <Badge variant="outline" className="rounded-lg py-1 px-3 border-[#B9D7EA] text-[#769FCD]">Account Locking</Badge>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Notifications Section */}
+                <div className="lg:col-span-2 space-y-6">
+                    <SectionHeader
+                        icon={Bell}
+                        title="Notification Settings"
+                        description="Control how system alerts and emails are handled."
+                        color="#769FCD"
+                    />
+                    <Card className="border-none shadow-sm rounded-3xl bg-white/50 backdrop-blur-sm">
+                        <CardContent className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="flex items-center justify-between p-4 rounded-2xl bg-white border border-[#B9D7EA]/50">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2 rounded-xl bg-green-50 text-green-600">
+                                        <Mail size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-[#1E293B]">Email Notifications</p>
+                                        <p className="text-xs text-[#64748B]">Send daily activity summaries</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setSettings({ ...settings, emailNotifications: !settings.emailNotifications })}
+                                    className={`w-12 h-6 rounded-full transition-all duration-300 relative ${settings.emailNotifications ? 'bg-green-500' : 'bg-gray-200'}`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${settings.emailNotifications ? 'right-1' : 'left-1'}`} />
+                                </button>
+                            </div>
+
+                            <div className="flex items-center justify-between p-4 rounded-2xl bg-white border border-[#B9D7EA]/50">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2 rounded-xl bg-orange-50 text-orange-600">
+                                        <Bell size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-[#1E293B]">Critical Alerts</p>
+                                        <p className="text-xs text-[#64748B]">Push notifications for emergencies</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setSettings({ ...settings, systemAlerts: !settings.systemAlerts })}
+                                    className={`w-12 h-6 rounded-full transition-all duration-300 relative ${settings.systemAlerts ? 'bg-orange-500' : 'bg-gray-200'}`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${settings.systemAlerts ? 'right-1' : 'left-1'}`} />
+                                </button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
         </motion.div>
     );
 };

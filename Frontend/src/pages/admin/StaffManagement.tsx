@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
     Plus, Search, Loader2,
     Power, MoreHorizontal,
-    Stethoscope, Phone, GraduationCap, ChevronLeft, ChevronRight,
+    Stethoscope, Phone, TestTube2, ChevronLeft, ChevronRight,
     ShieldCheck, Clock, Filter, LayoutGrid, List
 } from 'lucide-react';
 import { authService } from '../../api/auth.service';
@@ -53,7 +54,7 @@ const StaffManagement: React.FC = () => {
     const [roleFilter, setRoleFilter] = useState<UserRole | 'ALL'>('ALL');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 8;
+    const itemsPerPage = viewMode === 'table' ? 5 : 8;
 
     // Action state
     const [togglingStatus, setTogglingStatus] = useState<string | null>(null);
@@ -109,9 +110,14 @@ const StaffManagement: React.FC = () => {
     const filteredStaff = staff.filter(s => {
         const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             s.email.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesRole = roleFilter === 'ALL' || s.role === roleFilter;
+        const matchesRole = roleFilter === 'ALL' ? s.role !== 'ADMIN' : s.role === roleFilter;
         return matchesSearch && matchesRole;
     });
+
+    // Reset to first page when view mode or filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [viewMode, searchQuery, roleFilter]);
 
     const totalPages = Math.ceil(filteredStaff.length / itemsPerPage);
     const paginatedStaff = filteredStaff.slice(
@@ -121,10 +127,10 @@ const StaffManagement: React.FC = () => {
 
     const getRoleConfig = (role: UserRole) => {
         const configs: Record<UserRole, { icon: any, color: string, bg: string }> = {
-            ADMIN: { icon: ShieldCheck, color: '#1E293B', bg: '#D6E6F2' },
+            ADMIN: { icon: ShieldCheck, color: '#27374D', bg: '#DDE6ED' },
             DOCTOR: { icon: Stethoscope, color: '#769FCD', bg: '#F7FBFC' },
-            RECEPTIONIST: { icon: Phone, color: '#769FCD', bg: '#D6E6F2' },
-            LAB: { icon: GraduationCap, color: '#475569', bg: '#B9D7EA' },
+            RECEPTIONIST: { icon: Phone, color: '#0EA5E9', bg: '#F0F9FF' },
+            LAB: { icon: TestTube2, color: '#818CF8', bg: '#EEF2FF' },
         };
         return configs[role];
     };
@@ -176,22 +182,34 @@ const StaffManagement: React.FC = () => {
                         </SelectContent>
                     </Select>
 
-                    <div className="bg-white border border-[#B9D7EA] rounded-xl p-1 flex">
+                    <div className="bg-white border border-[#B9D7EA] rounded-2xl p-1 flex relative h-12 w-[100px] items-center">
+                        <motion.div
+                            initial={false}
+                            animate={{ x: viewMode === 'table' ? 0 : 44 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            className="absolute left-1 w-11 h-10 bg-[#D6E6F2] rounded-xl z-0"
+                        />
                         <Button
                             variant="ghost"
                             size="icon"
-                            className={`h-10 w-10 rounded-lg ${viewMode === 'table' ? 'bg-[#D6E6F2] text-[#769FCD]' : 'text-[#64748B]'}`}
+                            className={cn(
+                                "h-11 w-11 rounded-xl z-10 transition-colors duration-300",
+                                viewMode === 'table' ? 'text-[#769FCD]' : 'text-[#64748B] hover:text-[#769FCD]'
+                            )}
                             onClick={() => setViewMode('table')}
                         >
-                            <List size={18} />
+                            <List size={20} />
                         </Button>
                         <Button
                             variant="ghost"
                             size="icon"
-                            className={`h-10 w-10 rounded-lg ${viewMode === 'grid' ? 'bg-[#D6E6F2] text-[#769FCD]' : 'text-[#64748B]'}`}
+                            className={cn(
+                                "h-11 w-11 rounded-xl z-10 transition-colors duration-300",
+                                viewMode === 'grid' ? 'text-[#769FCD]' : 'text-[#64748B] hover:text-[#769FCD]'
+                            )}
                             onClick={() => setViewMode('grid')}
                         >
-                            <LayoutGrid size={18} />
+                            <LayoutGrid size={20} />
                         </Button>
                     </div>
                 </div>
@@ -200,10 +218,10 @@ const StaffManagement: React.FC = () => {
             {/* Stats Summary */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total Users', value: staff.length, color: '#769FCD', bg: '#D6E6F2' },
-                    { label: 'Active', value: staff.filter(s => s.status === 'ACTIVE').length, color: '#769FCD', bg: '#B9D7EA' },
-                    { label: 'Doctors', value: staff.filter(s => s.role === 'DOCTOR').length, color: '#769FCD', bg: '#D6E6F2' },
-                    { label: 'Suspended', value: staff.filter(s => s.status === 'INACTIVE').length, color: '#B9D7EA', bg: '#F7FBFC' },
+                    { label: 'Total Users', value: staff.length, color: '#27374D', bg: '#D6E6F2' },
+                    { label: 'Active', value: staff.filter(s => s.status === 'ACTIVE').length, color: '#27374D', bg: '#B9D7EA' },
+                    { label: 'Doctors', value: staff.filter(s => s.role === 'DOCTOR').length, color: '#27374D', bg: '#D6E6F2' },
+                    { label: 'Suspended', value: staff.filter(s => s.status === 'INACTIVE').length, color: '#27374D', bg: '#F7FBFC' },
                 ].map((stat, i) => (
                     <Card key={i} className="border-none shadow-sm overflow-hidden">
                         <CardContent className="p-6">
@@ -215,159 +233,360 @@ const StaffManagement: React.FC = () => {
             </div>
 
             {/* Content View */}
-            <Card className="border-none shadow-sm overflow-hidden">
-                <Table>
-                    <TableHeader className="bg-[#F7FBFC]">
-                        <TableRow>
-                            <TableHead className="font-bold text-[#475569] h-14 pl-8">Name & Contact</TableHead>
-                            <TableHead className="font-bold text-[#475569] h-14">Role</TableHead>
-                            <TableHead className="font-bold text-[#475569] h-14">Status</TableHead>
-                            <TableHead className="font-bold text-[#475569] h-14">Registered</TableHead>
-                            <TableHead className="h-14 w-20"></TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            <TableRow>
-                                <TableCell colSpan={5} className="h-64 text-center">
-                                    <div className="flex flex-col items-center gap-4">
-                                        <Loader2 className="w-8 h-8 animate-spin text-[#769FCD]" />
-                                        <p className="text-[#64748B] font-medium">Loading user data...</p>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ) : paginatedStaff.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={5} className="h-64 text-center">
-                                    <div className="flex flex-col items-center gap-4">
-                                        <div className="w-16 h-16 bg-[#F7FBFC] rounded-2xl flex items-center justify-center text-[#94A3B8]">
-                                            <Search size={32} />
-                                        </div>
-                                        <div>
-                                            <p className="text-[#1E293B] font-bold">No users found</p>
-                                            <p className="text-[#64748B] text-sm mt-1">Try adjusting your search or filters</p>
-                                        </div>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            paginatedStaff.map((user) => {
-                                const conf = getRoleConfig(user.role);
-                                return (
-                                    <TableRow key={user.id} className="group hover:bg-[#F7FBFC] transition-colors">
-                                        <TableCell className="pl-8 py-5">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-sm" style={{ backgroundColor: conf.color }}>
-                                                    {user.name.charAt(0)}
+            <motion.div
+                layout
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+            >
+                {viewMode === 'table' ? (
+                    <Card className="border border-[#E2E8F0] shadow-lg overflow-hidden rounded-2xl bg-white">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="bg-gradient-to-r from-[#27374D] to-[#526D82] hover:from-[#27374D] hover:to-[#526D82]">
+                                    <TableHead className="font-semibold text-white/90 h-14 pl-8 text-xs uppercase tracking-wider">Employee</TableHead>
+                                    <TableHead className="font-semibold text-white/90 h-14 text-xs uppercase tracking-wider">Department</TableHead>
+                                    <TableHead className="font-semibold text-white/90 h-14 text-xs uppercase tracking-wider">Status</TableHead>
+                                    <TableHead className="font-semibold text-white/90 h-14 text-xs uppercase tracking-wider">Joined</TableHead>
+                                    <TableHead className="h-14 w-20"></TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-64 text-center bg-[#FAFBFC]">
+                                            <div className="flex flex-col items-center gap-4">
+                                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#769FCD] to-[#526D82] flex items-center justify-center">
+                                                    <Loader2 className="w-6 h-6 animate-spin text-white" />
                                                 </div>
-                                                <div>
-                                                    <p className="text-sm font-bold text-[#1E293B] group-hover:text-[#769FCD] transition-colors">{user.name}</p>
-                                                    <p className="text-xs text-[#64748B] mt-0.5">{user.email}</p>
-                                                </div>
+                                                <p className="text-[#64748B] font-medium">Loading staff records...</p>
                                             </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge
-                                                className="border-none px-3 py-1 font-bold text-[10px] tracking-wider rounded-lg"
-                                                style={{ backgroundColor: conf.bg, color: conf.color }}
-                                            >
-                                                {user.role}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <div className={`w-2 h-2 rounded-full ${user.status === 'ACTIVE' ? 'bg-[#10B981]' : 'bg-[#94A3B8]'}`} />
-                                                <span className={`text-[13px] font-semibold ${user.status === 'ACTIVE' ? 'text-[#059669]' : 'text-[#64748B]'}`}>
-                                                    {user.status === 'ACTIVE' ? 'Active' : 'Inactive'}
-                                                </span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-1.5 text-[#64748B]">
-                                                <Clock size={14} />
-                                                <span className="text-sm font-medium">
-                                                    {new Date(user.createdAt).toLocaleDateString()}
-                                                </span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="hover:bg-[#D6E6F2] rounded-xl h-10 w-10">
-                                                        <MoreHorizontal className="w-5 h-5" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-[200px] p-2 rounded-xl shadow-xl border-[#B9D7EA]">
-                                                    <DropdownMenuLabel className="text-[10px] font-bold text-[#94A3B8] uppercase px-3 py-2">Options</DropdownMenuLabel>
-                                                    <DropdownMenuItem
-                                                        className="rounded-lg gap-2 cursor-pointer font-medium p-3 hover:bg-[#D6E6F2]"
-                                                        onClick={() => navigate(`/admin/profile/${user.id}`)}
-                                                    >
-                                                        <ShieldCheck size={16} className="text-[#64748B]" /> View Profile
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        className={`rounded-lg gap-2 cursor-pointer font-medium p-3 ${user.status === 'ACTIVE' ? 'text-[#EF4444] hover:bg-red-50' : 'text-[#10B981] hover:bg-green-50'}`}
-                                                        onClick={() => confirmToggle(user)}
-                                                        disabled={togglingStatus === user.id}
-                                                    >
-                                                        {togglingStatus === user.id ? (
-                                                            <Loader2 size={16} className="animate-spin" />
-                                                        ) : (
-                                                            <Power size={16} />
-                                                        )}
-                                                        {user.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
-                                )
-                            })
-                        )}
-                    </TableBody>
-                </Table>
+                                ) : paginatedStaff.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-64 text-center bg-[#FAFBFC]">
+                                            <div className="flex flex-col items-center gap-4">
+                                                <div className="w-16 h-16 bg-[#F1F5F9] rounded-2xl flex items-center justify-center">
+                                                    <Search size={28} className="text-[#94A3B8]" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[#1E293B] font-bold text-lg">No staff members found</p>
+                                                    <p className="text-[#64748B] text-sm mt-1">Try adjusting your search criteria</p>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    paginatedStaff.map((user, index) => {
+                                        const conf = getRoleConfig(user.role);
+                                        const RoleIcon = conf.icon;
+                                        return (
+                                            <TableRow
+                                                key={user.id}
+                                                className={cn(
+                                                    "group transition-all duration-200",
+                                                    index % 2 === 0 ? "bg-white" : "bg-[#FAFBFC]",
+                                                    "hover:bg-[#F0F7FF] hover:shadow-sm"
+                                                )}
+                                            >
+                                                <TableCell className="pl-8 py-4">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="relative">
+                                                            <div
+                                                                className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-white text-lg shadow-md ring-2 ring-white"
+                                                                style={{ backgroundColor: conf.color }}
+                                                            >
+                                                                {user.name.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <div
+                                                                className="absolute -bottom-1 -right-1 w-5 h-5 rounded-md flex items-center justify-center shadow-sm border-2 border-white"
+                                                                style={{ backgroundColor: conf.bg }}
+                                                            >
+                                                                <RoleIcon size={10} style={{ color: conf.color }} />
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-[#1E293B] group-hover:text-[#27374D] transition-colors">{user.name}</p>
+                                                            <p className="text-xs text-[#64748B] mt-0.5 font-medium">{user.email}</p>
+                                                        </div>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge
+                                                            className="border-none px-3 py-1.5 font-semibold text-[11px] tracking-wide rounded-lg shadow-sm"
+                                                            style={{ backgroundColor: conf.bg, color: conf.color }}
+                                                        >
+                                                            <RoleIcon size={12} className="mr-1.5" />
+                                                            {user.role}
+                                                        </Badge>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className={cn(
+                                                        "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold",
+                                                        user.status === 'ACTIVE'
+                                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                            : 'bg-slate-100 text-slate-500 border border-slate-200'
+                                                    )}>
+                                                        <span className={cn(
+                                                            "w-2 h-2 rounded-full animate-pulse",
+                                                            user.status === 'ACTIVE' ? "bg-emerald-500" : "bg-slate-400"
+                                                        )} />
+                                                        {user.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2 text-[#64748B]">
+                                                        <div className="w-8 h-8 rounded-lg bg-[#F1F5F9] flex items-center justify-center">
+                                                            <Clock size={14} className="text-[#94A3B8]" />
+                                                        </div>
+                                                        <span className="text-sm font-medium">
+                                                            {new Date(user.createdAt).toLocaleDateString('en-US', {
+                                                                month: 'short',
+                                                                day: 'numeric',
+                                                                year: 'numeric'
+                                                            })}
+                                                        </span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-right pr-6">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-9 w-9 rounded-lg hover:bg-[#27374D]/10 transition-colors"
+                                                            >
+                                                                <MoreHorizontal className="w-4 h-4 text-[#64748B]" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-[180px] p-1.5 rounded-xl shadow-xl border border-[#E2E8F0]">
+                                                            <DropdownMenuItem
+                                                                className="rounded-lg gap-2 cursor-pointer font-medium px-3 py-2.5 text-[13px] hover:bg-[#F1F5F9]"
+                                                                onClick={() => navigate(`/admin/profile/${user.id}`)}
+                                                            >
+                                                                <ShieldCheck size={15} className="text-[#64748B]" /> View Profile
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                className={cn(
+                                                                    "rounded-lg gap-2 cursor-pointer font-medium px-3 py-2.5 text-[13px]",
+                                                                    user.status === 'ACTIVE' ? 'text-rose-600 hover:bg-rose-50' : 'text-emerald-600 hover:bg-emerald-50'
+                                                                )}
+                                                                onClick={() => confirmToggle(user)}
+                                                                disabled={togglingStatus === user.id}
+                                                            >
+                                                                {togglingStatus === user.id ? (
+                                                                    <Loader2 size={15} className="animate-spin" />
+                                                                ) : (
+                                                                    <Power size={15} />
+                                                                )}
+                                                                {user.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                    })
+                                )}
+                            </TableBody>
+                        </Table>
 
-                {/* Pagination */}
-                <div className="bg-[#F7FBFC] px-8 py-5 flex items-center justify-between border-t border-[#B9D7EA]">
-                    <p className="text-sm text-[#64748B] font-medium">
-                        Displaying <span className="text-[#1E293B] font-bold">{Math.min(filteredStaff.length, itemsPerPage)}</span> results out of <span className="text-[#1E293B] font-bold">{filteredStaff.length}</span>
-                    </p>
-                    <div className="flex items-center gap-3">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-10 rounded-xl px-4 font-bold border-[#B9D7EA] shadow-sm flex items-center gap-2"
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                        >
-                            <ChevronLeft size={16} /> Previous
-                        </Button>
-                        <div className="flex items-center gap-1 mx-2">
-                            {Array.from({ length: totalPages }).map((_, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => setCurrentPage(i + 1)}
-                                    className={`w-10 h-10 rounded-xl text-sm font-bold transition-all ${currentPage === i + 1
-                                        ? 'bg-[#769FCD] text-white shadow-lg shadow-[#769FCD]/30'
-                                        : 'text-[#64748B] hover:bg-[#E2E8F0]'
-                                        }`}
+                        {/* Professional Pagination */}
+                        <div className="bg-gradient-to-r from-[#F8FAFC] to-[#F1F5F9] px-8 py-4 flex items-center justify-between border-t border-[#E2E8F0]">
+                            <p className="text-sm text-[#64748B]">
+                                Showing <span className="font-semibold text-[#27374D]">{paginatedStaff.length}</span> of <span className="font-semibold text-[#27374D]">{filteredStaff.length}</span> staff members
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-9 rounded-lg px-3 text-sm font-medium border-[#E2E8F0] hover:bg-white hover:border-[#CBD5E1] disabled:opacity-50"
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
                                 >
-                                    {i + 1}
-                                </button>
-                            ))}
+                                    <ChevronLeft size={16} />
+                                </Button>
+                                <div className="flex items-center gap-1 bg-white rounded-lg border border-[#E2E8F0] p-1">
+                                    {Array.from({ length: totalPages }).map((_, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => setCurrentPage(i + 1)}
+                                            className={cn(
+                                                "w-8 h-8 rounded-md text-sm font-medium transition-all",
+                                                currentPage === i + 1
+                                                    ? 'bg-[#27374D] text-white shadow-md'
+                                                    : 'text-[#64748B] hover:bg-[#F1F5F9]'
+                                            )}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    ))}
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-9 rounded-lg px-3 text-sm font-medium border-[#E2E8F0] hover:bg-white hover:border-[#CBD5E1] disabled:opacity-50"
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    <ChevronRight size={16} />
+                                </Button>
+                            </div>
                         </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-10 rounded-xl px-4 font-bold border-[#B9D7EA] shadow-sm flex items-center gap-2"
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
-                        >
-                            Next <ChevronRight size={16} />
-                        </Button>
+                    </Card>
+                ) : (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                            {isLoading ? (
+                                Array.from({ length: 8 }).map((_, i) => (
+                                    <Card key={i} className="border border-[#E2E8F0] shadow-md h-52 animate-pulse bg-gradient-to-br from-white to-[#F8FAFC] rounded-2xl" />
+                                ))
+                            ) : paginatedStaff.length === 0 ? (
+                                <div className="col-span-full h-64 flex flex-col items-center justify-center gap-4 bg-white rounded-2xl border border-[#E2E8F0] shadow-md">
+                                    <div className="w-16 h-16 rounded-2xl bg-[#F1F5F9] flex items-center justify-center">
+                                        <Search size={28} className="text-[#94A3B8]" />
+                                    </div>
+                                    <p className="text-[#1E293B] font-bold text-lg">No staff members found</p>
+                                </div>
+                            ) : (
+                                paginatedStaff.map((user) => {
+                                    const conf = getRoleConfig(user.role);
+                                    const RoleIcon = conf.icon;
+                                    return (
+                                        <motion.div
+                                            key={user.id}
+                                            layout
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            whileHover={{ y: -4, scale: 1.02 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="h-full"
+                                        >
+                                            <Card className="border border-[#E2E8F0] shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden bg-white group h-full flex flex-col">
+                                                {/* Colored Header Bar */}
+                                                <div
+                                                    className="h-2 w-full"
+                                                    style={{ backgroundColor: conf.color }}
+                                                />
+                                                <CardContent className="p-5 flex flex-col h-full">
+                                                    <div className="flex justify-between items-start mb-4">
+                                                        <div className="relative">
+                                                            <div
+                                                                className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl text-white shadow-lg ring-4 ring-white"
+                                                                style={{
+                                                                    background: `linear-gradient(135deg, ${conf.color} 0%, ${conf.color}dd 100%)`
+                                                                }}
+                                                            >
+                                                                {user.name.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <div
+                                                                className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg flex items-center justify-center shadow-md border-2 border-white"
+                                                                style={{ backgroundColor: conf.bg }}
+                                                            >
+                                                                <RoleIcon size={12} style={{ color: conf.color }} />
+                                                            </div>
+                                                        </div>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-[#F1F5F9]">
+                                                                    <MoreHorizontal className="w-4 h-4 text-[#94A3B8]" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end" className="w-[160px] p-1.5 rounded-xl shadow-xl border border-[#E2E8F0]">
+                                                                <DropdownMenuItem className="rounded-lg gap-2 px-3 py-2 text-[13px]" onClick={() => navigate(`/admin/profile/${user.id}`)}>
+                                                                    <ShieldCheck size={14} /> Profile
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    className={cn("rounded-lg gap-2 px-3 py-2 text-[13px]", user.status === 'ACTIVE' ? "text-rose-600 hover:bg-rose-50" : "text-emerald-600 hover:bg-emerald-50")}
+                                                                    onClick={() => confirmToggle(user)}
+                                                                >
+                                                                    <Power size={14} /> {user.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </div>
+
+                                                    <div className="space-y-1 grow">
+                                                        <h3 className="font-bold text-[#1E293B] text-base line-clamp-1 group-hover:text-[#27374D] transition-colors">{user.name}</h3>
+                                                        <p className="text-xs text-[#94A3B8] line-clamp-1 font-medium">{user.email}</p>
+                                                    </div>
+
+                                                    <div className="mt-4 flex items-center justify-between pt-4 border-t border-[#F1F5F9]">
+                                                        <Badge
+                                                            className="border-none px-2.5 py-1 font-semibold text-[10px] tracking-wide rounded-md shadow-sm"
+                                                            style={{ backgroundColor: conf.bg, color: conf.color }}
+                                                        >
+                                                            {user.role}
+                                                        </Badge>
+                                                        <div className={cn(
+                                                            "flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-semibold",
+                                                            user.status === 'ACTIVE'
+                                                                ? "bg-emerald-50 text-emerald-600"
+                                                                : "bg-slate-100 text-slate-500"
+                                                        )}>
+                                                            <span className={cn(
+                                                                "w-1.5 h-1.5 rounded-full",
+                                                                user.status === 'ACTIVE' ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
+                                                            )} />
+                                                            {user.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                                                        </div>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        </motion.div>
+                                    )
+                                })
+                            )}
+                        </div>
+
+                        {/* Professional Pagination for Grid */}
+                        <div className="bg-white px-6 py-4 flex items-center justify-between border border-[#E2E8F0] rounded-xl shadow-md">
+                            <p className="text-sm text-[#64748B]">
+                                Showing <span className="font-semibold text-[#27374D]">{paginatedStaff.length}</span> of <span className="font-semibold text-[#27374D]">{filteredStaff.length}</span> staff members
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-9 rounded-lg px-3 text-sm font-medium border-[#E2E8F0] hover:bg-[#F8FAFC] disabled:opacity-50"
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                >
+                                    <ChevronLeft size={16} />
+                                </Button>
+                                <div className="flex items-center gap-1 bg-[#F8FAFC] rounded-lg border border-[#E2E8F0] p-1">
+                                    {Array.from({ length: totalPages }).map((_, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => setCurrentPage(i + 1)}
+                                            className={cn(
+                                                "w-8 h-8 rounded-md text-sm font-medium transition-all",
+                                                currentPage === i + 1
+                                                    ? 'bg-[#27374D] text-white shadow-md'
+                                                    : 'text-[#64748B] hover:bg-white'
+                                            )}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    ))}
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-9 rounded-lg px-3 text-sm font-medium border-[#E2E8F0] hover:bg-[#F8FAFC] disabled:opacity-50"
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    <ChevronRight size={16} />
+                                </Button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </Card>
+                )}
+            </motion.div>
 
             {/* Confirmation Dialog */}
             <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>

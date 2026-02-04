@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
     Shield, Clock, Loader2, Lock,
     KeyRound, Eye, EyeOff, CheckCircle,
-    User as UserIcon, AlertCircle
+    User as UserIcon, AlertCircle, ArrowLeft
 } from 'lucide-react';
 import {
     Dialog, DialogContent, DialogHeader,
@@ -21,6 +21,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/Tabs'
 const Profile: React.FC = () => {
     const { userId } = useParams<{ userId?: string }>();
     const { user: currentUser } = useAuth();
+    const navigate = useNavigate();
     const { toast, showToast, hideToast } = useToast();
 
     const [userData, setUserData] = useState<StaffUser | null>(null);
@@ -121,24 +122,37 @@ const Profile: React.FC = () => {
 
     const getRoleColor = (role: string) => {
         switch (role) {
-            case 'ADMIN': return 'bg-[#D6E6F2] text-[#1E293B] border-[#B9D7EA]';
-            case 'DOCTOR': return 'bg-[#D6E6F2] text-[#769FCD] border-[#B9D7EA]';
-            case 'RECEPTIONIST': return 'bg-[#F7FBFC] text-[#769FCD] border-[#B9D7EA]';
-            case 'LAB': return 'bg-[#D6E6F2] text-[#475569] border-[#B9D7EA]';
+            case 'ADMIN': return 'bg-[#DDE6ED] text-[#27374D] border-[#B9D7EA]';
+            case 'DOCTOR': return 'bg-[#F7FBFC] text-[#769FCD] border-[#B9D7EA]';
+            case 'RECEPTIONIST': return 'bg-[#F0F9FF] text-[#0EA5E9] border-[#B9D7EA]';
+            case 'LAB': return 'bg-[#EEF2FF] text-[#818CF8] border-[#B9D7EA]';
             default: return 'bg-[#F7FBFC] text-[#64748B] border-[#B9D7EA]';
         }
     };
 
     return (
-        <div className="px-8 pb-8 pt-2 max-w-[1600px] mx-auto space-y-6 animate-in fade-in duration-500 overflow-hidden">
+        <div className="px-8 pb-8 pt-4 max-w-[1600px] mx-auto space-y-6 animate-in fade-in duration-500 overflow-hidden">
+            {/* Back Navigation */}
+            <div className="flex items-center">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate(-1)}
+                    className="group flex items-center gap-2 text-[#64748B] hover:text-[#27374D] hover:bg-[#D6E6F2] rounded-xl px-4 py-2 transition-all"
+                >
+                    <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
+                    <span className="font-bold text-xs uppercase tracking-widest">Go Back</span>
+                </Button>
+            </div>
+
             {/* Minimal Header */}
             <header className="bg-white border border-[#B9D7EA] rounded-xl p-6 shadow-sm flex items-center gap-6">
                 <div
                     className="w-16 h-16 rounded-xl flex items-center justify-center text-xl font-bold text-white shadow-md shrink-0"
                     style={{
-                        backgroundColor: userData.role === 'ADMIN' ? '#769FCD' :
+                        backgroundColor: userData.role === 'ADMIN' ? '#27374D' :
                             userData.role === 'DOCTOR' ? '#769FCD' :
-                                userData.role === 'RECEPTIONIST' ? '#B9D7EA' : '#475569'
+                                userData.role === 'RECEPTIONIST' ? '#0EA5E9' : '#818CF8'
                     }}
                 >
                     {initials}

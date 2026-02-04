@@ -14,7 +14,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { AddUserDialog } from '../../components/admin/AddUserDialog';
 
-const COLORS = ['#769FCD', '#B9D7EA', '#D6E6F2', '#A1C3D1'];
+const COLORS = ['#769FCD', '#0EA5E9', '#818CF8', '#27374D'];
 
 const AdminDashboard: React.FC = () => {
     const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -134,10 +134,10 @@ const AdminDashboard: React.FC = () => {
             {/* Stats Overview */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                    { label: 'Total Users', value: stats?.totalUsers || 0, icon: Users, color: '#769FCD', trend: '+12%' },
-                    { label: 'Doctors', value: stats?.doctorCount || 0, icon: Stethoscope, color: '#B9D7EA', trend: '+5%' },
-                    { label: 'Lab Staff', value: stats?.labStaffCount || 0, icon: FlaskConical, color: '#769FCD', trend: 'stable' },
-                    { label: 'Receptionists', value: stats?.receptionistCount || 0, icon: UserCog, color: '#B9D7EA', trend: '-2%' },
+                    { label: 'Total Users', value: stats?.totalUsers || 0, icon: Users, color: '#27374D', trend: '+12%' },
+                    { label: 'Doctors', value: stats?.doctorCount || 0, icon: Stethoscope, color: '#769FCD', trend: '+12%' },
+                    { label: 'Receptionists', value: stats?.receptionistCount || 0, icon: UserCog, color: '#0EA5E9', trend: '-2%' },
+                    { label: 'Lab Staff', value: stats?.labStaffCount || 0, icon: FlaskConical, color: '#818CF8', trend: 'stable' },
                 ].map((stat, idx) => (
                     <motion.div key={idx} variants={itemVariants}>
                         <Card className="hover:shadow-md transition-shadow">

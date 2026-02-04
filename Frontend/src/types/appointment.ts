@@ -28,4 +28,5 @@ export interface AppointmentFilters {
     doctorId?: string;
     patientId?: string;
     date?: string;
+    all?: boolean;
 }

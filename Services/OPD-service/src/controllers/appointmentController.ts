@@ -116,16 +116,18 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
 
 export const getAllAppointments = async (req: Request, res: Response) => {
     try {
-        const { date } = req.query;
-        logger.info(`Fetch all appointments request | date=${date || 'today'}`);
+        const { date, all } = req.query;
+        logger.info(`Fetch all appointments request | date=${date || 'today'} | all=${all || 'false'}`);
 
         const appointmentDate = date ? new Date(date as string) : new Date();
         appointmentDate.setHours(0, 0, 0, 0);
 
         const userRole = req.user?.role;
-        const whereClause: any = {
-            appointmentDate,
-        };
+        const whereClause: any = {};
+
+        if (all !== 'true') {
+            whereClause.appointmentDate = appointmentDate;
+        }
 
         if (userRole === 'LAB') {
             whereClause.status = 'LAB_TESTS';

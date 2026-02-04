@@ -27,7 +27,7 @@ export const adminService = {
         try {
             const [usersResponse, appointments] = await Promise.all([
                 authApi.get<StaffUser[]>('/auth/users'),
-                appointmentService.getAppointments()
+                appointmentService.getAppointments({ all: true })
             ]);
 
             const users = usersResponse.data;
@@ -37,21 +37,33 @@ export const adminService = {
             const labStaffCount = users.filter(u => u.role === 'LAB').length;
             const adminCount = users.filter(u => u.role === 'ADMIN').length;
 
-            // Calculate appointments per day for the last 7 days
+            // Calculate appointments per day for the last 7 days using local dates
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const last7Days = Array.from({ length: 7 }, (_, i) => {
                 const d = new Date();
                 d.setDate(d.getDate() - i);
+                // Standard YYYY-MM-DD local format
+                const dateStr = [
+                    d.getFullYear(),
+                    String(d.getMonth() + 1).padStart(2, '0'),
+                    String(d.getDate()).padStart(2, '0')
+                ].join('-');
+
                 return {
                     dayName: days[d.getDay()],
-                    dateStr: d.toISOString().split('T')[0]
+                    dateStr: dateStr
                 };
             }).reverse();
 
             const appointmentsByDay = last7Days.map(day => {
                 const count = appointments.filter(app => {
-                    const appDate = new Date(app.appointmentDate).toISOString().split('T')[0];
-                    return appDate === day.dateStr;
+                    const d = new Date(app.appointmentDate);
+                    const appDateStr = [
+                        d.getFullYear(),
+                        String(d.getMonth() + 1).padStart(2, '0'),
+                        String(d.getDate()).padStart(2, '0')
+                    ].join('-');
+                    return appDateStr === day.dateStr;
                 }).length;
                 return { name: day.dayName, appointments: count };
             });
