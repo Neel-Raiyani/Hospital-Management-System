@@ -7,6 +7,7 @@ import {
 import { labService } from '../../api/lab.service';
 import { patientService } from '../../api/patient.service';
 import { doctorService } from '../../api/doctor.service';
+import { formatDoctorName } from '../../utils/nameUtils';
 import type { LabTest } from '../../types/lab';
 import LabReportUpload from '../../components/lab/LabReportUpload';
 
@@ -139,7 +140,7 @@ const LabDashboard: React.FC = () => {
                                                     {group.patient?.name || 'Unknown Patient'}
                                                 </h3>
                                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-0.5">
-                                                    Ref: {group.doctor?.name || 'Unknown Doctor'}
+                                                    Ref: {formatDoctorName(group.doctor?.name)}
                                                 </p>
                                             </div>
                                         </div>

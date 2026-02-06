@@ -27,6 +27,11 @@ enum LabTestStatus {
   CANCELLED
 }
 
+enum PaymentType {
+  CASH
+  ONLINE
+}
+
 model Appointment {
   id               String   @id @default(auto()) @map("_id") @db.ObjectId
   patientId        String
@@ -34,6 +39,8 @@ model Appointment {
   tokenNumber      Int
   appointmentDate  DateTime
   status           AppointmentStatus  @default(WAITING)
+  paymentType      PaymentType        @default(CASH)
+  checkupFee       Float?             @default(0)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
@@ -58,4 +65,19 @@ model LabTest {
   status        LabTestStatus
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model Doctor {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @unique
+  name            String
+  specialization  String
+  qualification   String?
+  experienceYears Int?
+  opdStartTime    String
+  opdEndTime      String
+  checkupFee      Float?   @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

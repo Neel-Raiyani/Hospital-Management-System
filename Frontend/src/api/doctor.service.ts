@@ -9,6 +9,7 @@ export interface Doctor {
     experienceYears?: number;
     opdStartTime: string;
     opdEndTime: string;
+    checkupFee?: number;
     isActive: boolean;
     createdAt: string;
     updatedAt: string;

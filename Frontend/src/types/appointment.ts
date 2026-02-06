@@ -7,6 +7,8 @@ export interface Appointment {
     tokenNumber: number;
     appointmentDate: string;
     status: AppointmentStatus;
+    paymentType: 'CASH' | 'ONLINE';
+    checkupFee: number;
     createdAt: string;
     updatedAt: string;
     // Joined data

@@ -10,6 +10,7 @@ import {
     DialogTitle, DialogDescription, DialogTrigger
 } from '../components/ui/Dialog';
 import { authService, type StaffUser } from '../api/auth.service';
+import { formatDoctorName } from '../utils/nameUtils';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
@@ -159,7 +160,9 @@ const Profile: React.FC = () => {
                 </div>
                 <div className="grow">
                     <div className="flex items-center gap-3 mb-1">
-                        <h1 className="text-3xl font-bold text-[#111827] tracking-tight">{userData.name}</h1>
+                        <h1 className="text-3xl font-bold text-[#111827] tracking-tight">
+                            {userData.role === 'DOCTOR' ? formatDoctorName(userData.name) : userData.name}
+                        </h1>
                         <Badge className={`${getRoleColor(userData.role)} border-none px-2.5 py-0.5 font-bold text-[10px] tracking-wider rounded-lg`}>
                             {userData.role}
                         </Badge>

@@ -13,6 +13,7 @@ export interface StaffUser {
     experienceYears?: number | null;
     opdStartTime?: string | null;
     opdEndTime?: string | null;
+    checkupFee?: number | null;
     // Receptionist/Lab fields
     phone?: string | null;
     shift?: string | null;
@@ -28,6 +29,7 @@ export interface CreateUserRequest {
         experienceYears?: number;
         opdStartTime: string;
         opdEndTime: string;
+        checkupFee: number;
     };
     receptionistData?: {
         phone?: string;

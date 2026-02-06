@@ -3,6 +3,7 @@ import { appointmentService } from '../../api/appointment.service';
 import { patientService } from '../../api/patient.service';
 import { doctorService } from '../../api/doctor.service';
 import type { Appointment, AppointmentStatus } from '../../types/appointment';
+import { formatDoctorName } from '../../utils/nameUtils';
 import { useAuth } from '../../hooks/useAuth';
 import StatusUpdateModal from '../../components/appointments/StatusUpdateModal';
 import CheckupForm from '../../components/appointments/CheckupForm';
@@ -193,7 +194,7 @@ const AppointmentList: React.FC = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="text-sm font-medium text-gray-700">{app.doctor?.name || 'Unknown Doctor'}</div>
+                                        <div className="text-sm font-medium text-gray-700">{formatDoctorName(app.doctor?.name)}</div>
                                         <div className="text-[10px] text-indigo-500 font-bold uppercase">{app.doctor?.specialization || 'General'}</div>
                                     </td>
                                     <td className="px-6 py-4">

@@ -4,9 +4,21 @@ import logger from '@utils/logger.js';
 
 export const bookAppointment = async (req: Request, res: Response) => {
     try {
-        const { patientId, doctorId, appointmentDate: requestedDate } = req.body;
+        const { patientId, doctorId, appointmentDate: requestedDate, paymentType, checkupFee } = req.body;
 
-        logger.info(`Book appointment request | patientId=${patientId} | doctorId=${doctorId} | date=${requestedDate || 'today'}`);
+        logger.info(`Book appointment request | patientId=${patientId} | doctorId=${doctorId} | date=${requestedDate || 'today'} | paymentType=${paymentType} | fee=${checkupFee}`);
+
+        // Fetch doctor profile to get the truth for checkupFee
+        const doctorProfile = await (prisma as any).doctor.findUnique({
+            where: { id: doctorId }
+        });
+
+        if (!doctorProfile) {
+            logger.error(`Doctor profile not found for booking | doctorId=${doctorId}`);
+            return res.status(404).json({ message: 'Doctor profile not found' });
+        }
+
+        const finalCheckupFee = doctorProfile.checkupFee ?? checkupFee ?? 0;
 
         const appointmentDate = requestedDate ? new Date(requestedDate) : new Date();
         appointmentDate.setHours(0, 0, 0, 0);
@@ -71,6 +83,8 @@ export const bookAppointment = async (req: Request, res: Response) => {
                 doctorId,
                 appointmentDate,
                 tokenNumber: nextToken,
+                paymentType,
+                checkupFee: finalCheckupFee,
             },
         });
 

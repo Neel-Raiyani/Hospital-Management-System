@@ -2,14 +2,18 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { appointmentService } from '../../api/appointment.service';
 import { patientService } from '../../api/patient.service';
 import { doctorService } from '../../api/doctor.service';
+import { formatDoctorName } from '../../utils/nameUtils';
 import type { Appointment, AppointmentStatus } from '../../types/appointment';
-import { Loader2, Search, CheckCircle2, XCircle, CalendarDays, Hash, User, Stethoscope, Clock4, Shield, LayoutGrid, FileQuestion, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Search, CheckCircle2, XCircle, CalendarDays, Hash, User, Stethoscope, Clock4, Shield, LayoutGrid, FileQuestion, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
 const ReceptionistAppointments: React.FC = () => {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [doctors, setDoctors] = useState<any[]>([]);
+    const [doctorFilter, setDoctorFilter] = useState<string>('ALL');
+    const [showDoctorDropdown, setShowDoctorDropdown] = useState(false);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState<AppointmentStatus | 'ALL'>('ALL');
     const [searchTerm, setSearchTerm] = useState('');
@@ -38,6 +42,15 @@ const ReceptionistAppointments: React.FC = () => {
 
     const openConfirmDialog = (appointmentId: string, action: AppointmentStatus) => {
         setConfirmDialog({ show: true, appointmentId, action });
+    };
+
+    const fetchDoctors = async () => {
+        try {
+            const data = await doctorService.getDoctors();
+            setDoctors(data);
+        } catch (error) {
+            console.error('Failed to fetch doctors:', error);
+        }
     };
 
     const fetchAppointments = async () => {
@@ -83,6 +96,7 @@ const ReceptionistAppointments: React.FC = () => {
     };
 
     useEffect(() => {
+        fetchDoctors();
         fetchAppointments();
     }, []);
 
@@ -110,27 +124,29 @@ const ReceptionistAppointments: React.FC = () => {
     };
 
     const filteredAppointments = useMemo(() => {
-        // ... (existing logic)
-        return appointments.filter(app => {
-            const matchesStatus = statusFilter === 'ALL' || app.status === statusFilter;
-            const patientName = app.patient?.name?.toLowerCase() || '';
-            const doctorName = app.doctor?.name?.toLowerCase() || '';
-            const matchesSearch =
-                patientName.includes(searchTerm.toLowerCase()) ||
-                doctorName.includes(searchTerm.toLowerCase()) ||
-                app.tokenNumber.toString().includes(searchTerm);
+        return appointments
+            .filter(app => {
+                const matchesStatus = statusFilter === 'ALL' || app.status === statusFilter;
+                const matchesDoctor = doctorFilter === 'ALL' || app.doctorId === doctorFilter;
+                const patientName = app.patient?.name?.toLowerCase() || '';
+                const doctorName = app.doctor?.name?.toLowerCase() || '';
+                const matchesSearch =
+                    patientName.includes(searchTerm.toLowerCase()) ||
+                    doctorName.includes(searchTerm.toLowerCase()) ||
+                    app.tokenNumber.toString().includes(searchTerm);
 
-            const localAppDateStr = new Date(app.appointmentDate).toLocaleDateString('en-CA');
-            const selectedDateStr = selectedDate.toLocaleDateString('en-CA');
+                const localAppDateStr = new Date(app.appointmentDate).toLocaleDateString('en-CA');
+                const selectedDateStr = selectedDate.toLocaleDateString('en-CA');
 
-            let matchesDate = true;
-            if (viewMode === 'day') {
-                matchesDate = localAppDateStr === selectedDateStr;
-            }
+                let matchesDate = true;
+                if (viewMode === 'day') {
+                    matchesDate = localAppDateStr === selectedDateStr;
+                }
 
-            return matchesStatus && matchesSearch && matchesDate;
-        });
-    }, [appointments, statusFilter, searchTerm, selectedDate, viewMode]);
+                return matchesStatus && matchesDoctor && matchesSearch && matchesDate;
+            })
+            .sort((a, b) => a.tokenNumber - b.tokenNumber);
+    }, [appointments, statusFilter, doctorFilter, searchTerm, selectedDate, viewMode]);
 
     const totalPages = Math.ceil(filteredAppointments.length / ITEMS_PER_PAGE);
 
@@ -141,15 +157,21 @@ const ReceptionistAppointments: React.FC = () => {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [statusFilter, searchTerm, selectedDate, viewMode]);
+    }, [statusFilter, doctorFilter, searchTerm, selectedDate, viewMode]);
 
     const stats = useMemo(() => {
-        // Stats are based on the CURRENT VIEW (Day/All)
+        // Stats are based on the CURRENT VIEW (Day/All) and Doctor Filter
         const selectedDateStr = selectedDate.toLocaleDateString('en-CA');
         const currentView = appointments.filter(app => {
+            const matchesDoctor = doctorFilter === 'ALL' || app.doctorId === doctorFilter;
             const localAppDateStr = new Date(app.appointmentDate).toLocaleDateString('en-CA');
-            if (viewMode === 'day') return localAppDateStr === selectedDateStr;
-            return true;
+
+            let matchesDate = true;
+            if (viewMode === 'day') {
+                matchesDate = localAppDateStr === selectedDateStr;
+            }
+
+            return matchesDoctor && matchesDate;
         });
 
         return {
@@ -158,7 +180,7 @@ const ReceptionistAppointments: React.FC = () => {
             completed: currentView.filter(a => a.status === 'COMPLETED').length,
             cancelled: currentView.filter(a => a.status === 'CANCELLED').length,
         };
-    }, [appointments, selectedDate, viewMode]);
+    }, [appointments, selectedDate, viewMode, doctorFilter]);
 
 
 
@@ -190,6 +212,62 @@ const ReceptionistAppointments: React.FC = () => {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
+                    </div>
+
+                    {/* Doctor Filter */}
+                    <div className="relative min-w-[240px]">
+                        <button
+                            onClick={() => setShowDoctorDropdown(!showDoctorDropdown)}
+                            className="w-full pl-12 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 transition-all text-sm font-semibold flex items-center justify-between group hover:bg-white"
+                        >
+                            <Stethoscope className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-hover:text-teal-500 transition-colors" />
+                            <span className="truncate text-gray-700">
+                                {doctorFilter === 'ALL' ? 'All Doctors' : formatDoctorName(doctors.find(d => d.id === doctorFilter)?.name)}
+                            </span>
+                            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showDoctorDropdown ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {showDoctorDropdown && (
+                            <>
+                                <div
+                                    className="fixed inset-0 z-[100]"
+                                    onClick={() => setShowDoctorDropdown(false)}
+                                />
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-xl z-[101] overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top">
+                                    <div className="max-h-[300px] overflow-y-auto py-2">
+                                        <button
+                                            onClick={() => {
+                                                setDoctorFilter('ALL');
+                                                setShowDoctorDropdown(false);
+                                            }}
+                                            className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors hover:bg-teal-50 flex items-center gap-3 ${doctorFilter === 'ALL' ? 'text-teal-600 bg-teal-50/50' : 'text-gray-700'
+                                                }`}
+                                        >
+                                            <div className={`w-1.5 h-1.5 rounded-full ${doctorFilter === 'ALL' ? 'bg-teal-500' : 'bg-transparent'}`} />
+                                            All Doctors
+                                        </button>
+                                        <div className="h-px bg-gray-50 my-1 mx-2" />
+                                        {doctors.map((doctor) => (
+                                            <button
+                                                key={doctor.id}
+                                                onClick={() => {
+                                                    setDoctorFilter(doctor.id);
+                                                    setShowDoctorDropdown(false);
+                                                }}
+                                                className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors hover:bg-teal-50 flex items-center gap-3 ${doctorFilter === doctor.id ? 'text-teal-600 bg-teal-50/50' : 'text-gray-700'
+                                                    }`}
+                                            >
+                                                <div className={`w-1.5 h-1.5 rounded-full ${doctorFilter === doctor.id ? 'bg-teal-500' : 'bg-transparent'}`} />
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold">{formatDoctorName(doctor.name)}</span>
+                                                    <span className="text-[10px] text-gray-400 uppercase tracking-wider">{doctor.specialization}</span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     {/* Date Picker */}
@@ -374,7 +452,7 @@ const ReceptionistAppointments: React.FC = () => {
                                             </td>
                                             <td className="px-6 py-5">
                                                 <div>
-                                                    <div className="text-base font-bold text-gray-900">{app.doctor?.name || 'Unknown Doctor'}</div>
+                                                    <div className="text-base font-bold text-gray-900">{formatDoctorName(app.doctor?.name)}</div>
                                                     <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{app.doctor?.specialization || 'General'}</div>
                                                 </div>
                                             </td>

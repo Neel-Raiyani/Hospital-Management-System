@@ -1,6 +1,7 @@
 import React from 'react';
 import { Clock, User, Stethoscope, Activity, CheckCircle, XCircle } from 'lucide-react';
 import { Badge } from '../ui/Badge';
+import { formatDoctorName } from '../../utils/nameUtils';
 import type { Appointment, AppointmentStatus } from '../../types/appointment';
 
 interface DailyOPDQueueProps {
@@ -137,8 +138,8 @@ const DailyOPDQueue: React.FC<DailyOPDQueueProps> = ({ appointments, loading }) 
                                             <div className="flex items-center gap-3">
                                                 <div
                                                     className={`w-9 h-9 rounded-lg flex items-center justify-center font-semibold text-sm ${index === 0
-                                                            ? 'bg-teal-600 text-white'
-                                                            : 'bg-gray-100 text-gray-600'
+                                                        ? 'bg-teal-600 text-white'
+                                                        : 'bg-gray-100 text-gray-600'
                                                         }`}
                                                 >
                                                     #{appointment.tokenNumber}
@@ -167,7 +168,7 @@ const DailyOPDQueue: React.FC<DailyOPDQueueProps> = ({ appointments, loading }) 
                                         <td className="px-6 py-4">
                                             <div>
                                                 <p className="font-medium text-gray-900">
-                                                    Dr. {appointment.doctor?.name || 'Unknown'}
+                                                    {formatDoctorName(appointment.doctor?.name)}
                                                 </p>
                                                 <p className="text-xs text-gray-500">
                                                     {appointment.doctor?.specialization || 'General'}

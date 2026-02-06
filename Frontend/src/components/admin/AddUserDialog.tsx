@@ -44,11 +44,12 @@ const formSchema = z.object({
     experienceYears: z.coerce.number().min(0).optional(),
     opdStartTime: z.string().optional(),
     opdEndTime: z.string().optional(),
+    checkupFee: z.coerce.number().min(0, "Checkup fee must be at least 0").optional(),
     phone: z.string().optional(),
     shift: z.enum(['MORNING', 'EVENING', 'NIGHT']).optional(),
 }).refine((data) => {
     if (data.role === 'DOCTOR') {
-        return !!data.specialization && !!data.qualification && data.experienceYears !== undefined && !!data.opdStartTime && !!data.opdEndTime;
+        return !!data.specialization && !!data.qualification && data.experienceYears !== undefined && !!data.opdStartTime && !!data.opdEndTime && data.checkupFee !== undefined;
     }
     if (data.role === 'RECEPTIONIST' || data.role === 'LAB') {
         return !!data.phone && !!data.shift;
@@ -84,6 +85,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({ onSuccess, trigger
             experienceYears: 0,
             opdStartTime: '09:00',
             opdEndTime: '17:00',
+            checkupFee: 0,
             phone: '',
             shift: 'MORNING',
         },
@@ -134,6 +136,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({ onSuccess, trigger
                     experienceYears: Number(values.experienceYears) || 0,
                     opdStartTime: values.opdStartTime || '09:00',
                     opdEndTime: values.opdEndTime || '17:00',
+                    checkupFee: Number(values.checkupFee) || 0,
                 } : undefined,
                 receptionistData: (values.role === 'RECEPTIONIST') ? {
                     phone: values.phone?.replace(/\D/g, '') || '',
@@ -420,6 +423,23 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({ onSuccess, trigger
                                                             )}
                                                         />
                                                     </div>
+
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="checkupFee"
+                                                        render={({ field }) => (
+                                                            <FormItem className="space-y-3">
+                                                                <FormLabel className="flex items-center gap-2 text-[#475569] font-bold">
+                                                                    <ShieldCheck size={14} className="text-[#769FCD]" />
+                                                                    Checkup Fee (₹)
+                                                                </FormLabel>
+                                                                <FormControl>
+                                                                    <Input type="number" min="0" placeholder="e.g. 500" className="h-12 border-white bg-white rounded-xl shadow-sm focus-visible:ring-4 focus-visible:ring-[#769FCD]/10 focus-visible:border-[#769FCD] transition-all outline-none" {...field} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
                                                 </div>
                                             )}
 

@@ -13,13 +13,14 @@ import { cn } from '../../lib/utils';
 
 // UI Components
 import { Button } from '../../components/ui/Button';
+import { formatDoctorName } from '../../utils/nameUtils';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/Table';
 import { Card, CardContent } from '../../components/ui/Card';
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-    DropdownMenuLabel, DropdownMenuTrigger
+    DropdownMenuTrigger
 } from '../../components/ui/DropdownMenu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/Select';
 import {
@@ -72,6 +73,7 @@ const StaffManagement: React.FC = () => {
                 role: u.role,
                 status: u.status,
                 createdAt: u.createdAt,
+                checkupFee: u.checkupFee,
             })));
         } catch (error) {
             console.error('Failed to fetch staff:', error);
@@ -247,6 +249,7 @@ const StaffManagement: React.FC = () => {
                                     <TableHead className="font-semibold text-white/90 h-14 pl-8 text-xs uppercase tracking-wider">Employee</TableHead>
                                     <TableHead className="font-semibold text-white/90 h-14 text-xs uppercase tracking-wider">Department</TableHead>
                                     <TableHead className="font-semibold text-white/90 h-14 text-xs uppercase tracking-wider">Status</TableHead>
+                                    <TableHead className="font-semibold text-white/90 h-14 text-xs uppercase tracking-wider">Fee (₹)</TableHead>
                                     <TableHead className="font-semibold text-white/90 h-14 text-xs uppercase tracking-wider">Joined</TableHead>
                                     <TableHead className="h-14 w-20"></TableHead>
                                 </TableRow>
@@ -307,7 +310,9 @@ const StaffManagement: React.FC = () => {
                                                             </div>
                                                         </div>
                                                         <div>
-                                                            <p className="text-sm font-semibold text-[#1E293B] group-hover:text-[#27374D] transition-colors">{user.name}</p>
+                                                            <p className="text-sm font-semibold text-[#1E293B] group-hover:text-[#27374D] transition-colors">
+                                                                {user.role === 'DOCTOR' ? formatDoctorName(user.name) : user.name}
+                                                            </p>
                                                             <p className="text-xs text-[#64748B] mt-0.5 font-medium">{user.email}</p>
                                                         </div>
                                                     </div>
@@ -336,6 +341,11 @@ const StaffManagement: React.FC = () => {
                                                         )} />
                                                         {user.status === 'ACTIVE' ? 'Active' : 'Inactive'}
                                                     </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <span className="text-sm font-semibold text-gray-700">
+                                                        {user.role === 'DOCTOR' ? `₹${(user as any).checkupFee || 0}` : '-'}
+                                                    </span>
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-2 text-[#64748B]">
@@ -510,7 +520,9 @@ const StaffManagement: React.FC = () => {
                                                     </div>
 
                                                     <div className="space-y-1 grow">
-                                                        <h3 className="font-bold text-[#1E293B] text-base line-clamp-1 group-hover:text-[#27374D] transition-colors">{user.name}</h3>
+                                                        <h3 className="font-bold text-[#1E293B] text-base line-clamp-1 group-hover:text-[#27374D] transition-colors">
+                                                            {user.role === 'DOCTOR' ? formatDoctorName(user.name) : user.name}
+                                                        </h3>
                                                         <p className="text-xs text-[#94A3B8] line-clamp-1 font-medium">{user.email}</p>
                                                     </div>
 
@@ -534,6 +546,12 @@ const StaffManagement: React.FC = () => {
                                                             {user.status === 'ACTIVE' ? 'Active' : 'Inactive'}
                                                         </div>
                                                     </div>
+                                                    {user.role === 'DOCTOR' && (
+                                                        <div className="mt-3 flex items-center justify-between text-xs font-semibold text-teal-700 bg-teal-50/50 p-2 rounded-lg">
+                                                            <span>Checkup Fee</span>
+                                                            <span>₹{(user as any).checkupFee || 0}</span>
+                                                        </div>
+                                                    )}
                                                 </CardContent>
                                             </Card>
                                         </motion.div>

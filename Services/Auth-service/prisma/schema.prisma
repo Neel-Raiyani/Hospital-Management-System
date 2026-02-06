@@ -54,6 +54,7 @@ model Doctor {
   experienceYears Int?
   opdStartTime    String
   opdEndTime      String
+  checkupFee      Float?   @default(0)
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

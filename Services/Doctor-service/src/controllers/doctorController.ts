@@ -6,7 +6,7 @@ export const updateDoctor = async (req: Request, res: Response) => {
     try {
         const { id } = req.params as { id: string };
 
-        const { name, specialization, qualification, experienceYears, opdStartTime, opdEndTime } = req.body;
+        const { name, specialization, qualification, experienceYears, opdStartTime, opdEndTime, checkupFee } = req.body;
 
         logger.info(`Update doctor request | doctorId=${id} | user=${req.user?.name}`);
 
@@ -19,9 +19,18 @@ export const updateDoctor = async (req: Request, res: Response) => {
                     qualification,
                     experienceYears,
                     opdStartTime,
-                    opdEndTime
+                    opdEndTime,
+                    checkupFee
                 }
             });
+
+            // Also update the User's name if it was changed
+            if (name) {
+                await (tx as any).user.update({
+                    where: { id: doctor.userId },
+                    data: { name }
+                });
+            }
 
             await tx.oPD.update({
                 where: { doctorId: id },
@@ -99,9 +108,23 @@ export const deactivateDoctor = async (req: Request, res: Response) => {
 
         logger.info(`Deactivate doctor request | doctorId=${id} | user=${req.user?.name}`);
 
-        await prisma.doctor.update({
-            where: { id },
-            data: { isActive: false }
+        await prisma.$transaction(async (tx) => {
+            const doctor = await tx.doctor.update({
+                where: { id },
+                data: { isActive: false }
+            });
+
+            // Also deactivate the OPD status
+            await tx.oPD.update({
+                where: { doctorId: id },
+                data: { isActive: false }
+            });
+
+            // Also deactivate the User account
+            await (tx as any).user.update({
+                where: { id: doctor.userId },
+                data: { isActive: false }
+            });
         });
 
         logger.info(`Doctor deactivated successfully | doctorId=${id}`);

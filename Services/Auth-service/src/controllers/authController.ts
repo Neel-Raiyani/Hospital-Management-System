@@ -37,6 +37,7 @@ export const createUser = async (req: Request, res: Response) => {
             experienceYears: doctorData.experienceYears,
             opdStartTime: doctorData.opdStartTime,
             opdEndTime: doctorData.opdEndTime,
+            checkupFee: doctorData.checkupFee,
           },
         });
 
@@ -192,6 +193,7 @@ export const getUsers = async (req: Request, res: Response) => {
           experienceYears: true,
           opdStartTime: true,
           opdEndTime: true,
+          checkupFee: true,
         },
       }),
       prisma.receptionist.findMany({
@@ -233,6 +235,7 @@ export const getUsers = async (req: Request, res: Response) => {
         experienceYears: doctor?.experienceYears ?? null,
         opdStartTime: doctor?.opdStartTime ?? null,
         opdEndTime: doctor?.opdEndTime ?? null,
+        checkupFee: doctor?.checkupFee ?? null,
         // Receptionist/Lab fields
         phone: receptionist?.phone ?? lab?.phone ?? null,
         shift: receptionist?.shift ?? lab?.shift ?? null,
@@ -265,13 +268,40 @@ export const updateUserStatus = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: { isActive },
+    await prisma.$transaction(async (tx) => {
+      // Update User
+      await tx.user.update({
+        where: { id: userId },
+        data: { isActive },
+      });
+
+      // Update related role records
+      if (user.role === "DOCTOR") {
+        const doctor = await tx.doctor.update({
+          where: { userId },
+          data: { isActive },
+        });
+
+        // Also update OPD status for the doctor
+        await tx.oPD.update({
+          where: { doctorId: doctor.id },
+          data: { isActive },
+        });
+      } else if (user.role === "RECEPTIONIST") {
+        await tx.receptionist.update({
+          where: { userId },
+          data: { isActive },
+        });
+      } else if (user.role === "LAB") {
+        await tx.labStaff.update({
+          where: { userId },
+          data: { isActive },
+        });
+      }
     });
 
     const action = isActive ? 'activated' : 'deactivated';
-    logger.info(`User ${action} successfully | userId=${userId}`);
+    logger.info(`User ${action} successfully | userId=${userId} | role=${user.role}`);
     res.status(200).json({ message: `User ${action} successfully` });
   } catch (error) {
     logger.error(`Update user status error | userId=${req.params?.userId ?? "unknown"} | error=${(error as Error).message}`);
