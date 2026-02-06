@@ -19,11 +19,11 @@ export const patientService = {
     },
 
     /**
-     * List patients with pagination
+     * List patients with pagination and optional search
      */
-    listPatients: async (page: number = 1, limit: number = 5): Promise<PatientListResponse> => {
+    listPatients: async (page: number = 1, limit: number = 5, search?: string): Promise<PatientListResponse> => {
         const response = await patientApi.get('/patient/list', {
-            params: { page, limit }
+            params: { page, limit, search }
         });
         return response.data;
     },

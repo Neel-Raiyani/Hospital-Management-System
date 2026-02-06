@@ -4,12 +4,12 @@ import logger from '@utils/logger.js';
 
 export const bookAppointment = async (req: Request, res: Response) => {
     try {
-        const { patientId, doctorId } = req.body;
+        const { patientId, doctorId, appointmentDate: requestedDate } = req.body;
 
-        logger.info(`Book appointment request | patientId=${patientId} | doctorId=${doctorId}`);
+        logger.info(`Book appointment request | patientId=${patientId} | doctorId=${doctorId} | date=${requestedDate || 'today'}`);
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const appointmentDate = requestedDate ? new Date(requestedDate) : new Date();
+        appointmentDate.setHours(0, 0, 0, 0);
 
         const opd = await prisma.oPD.findUnique({
             where: { doctorId },
@@ -19,36 +19,44 @@ export const bookAppointment = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Doctor OPD not available' });
         }
 
-        const [startHour = 0, startMinute = 0] = opd.startTime.split(':').map(Number);
-        const [endHour = 0, endMinute = 0] = opd.endTime.split(':').map(Number);
+        // Only enforce OPD hours check for CURRENT day bookings
+        const todayAtMidnight = new Date();
+        todayAtMidnight.setHours(0, 0, 0, 0);
 
-        const now = new Date();
-        const startTime = new Date();
-        startTime.setHours(startHour, startMinute, 0, 0);
-        const endTime = new Date();
-        endTime.setHours(endHour, endMinute, 0, 0);
+        if (appointmentDate.getTime() === todayAtMidnight.getTime()) {
+            const [startHour = 0, startMinute = 0] = opd.startTime.split(':').map(Number);
+            const [endHour = 0, endMinute = 0] = opd.endTime.split(':').map(Number);
 
-        if (now < startTime || now > endTime) {
-            return res.status(400).json({ message: 'Cannot book appointment outside OPD hours' });
+            const now = new Date();
+            const startTime = new Date();
+            startTime.setHours(startHour, startMinute, 0, 0);
+            const endTime = new Date();
+            endTime.setHours(endHour, endMinute, 0, 0);
+
+            if (now > endTime) {
+                return res.status(400).json({ message: 'Cannot book appointment for today after OPD hours' });
+            }
+        } else if (appointmentDate.getTime() < todayAtMidnight.getTime()) {
+            return res.status(400).json({ message: 'Cannot book appointment for a past date' });
         }
 
         const existing = await prisma.appointment.findFirst({
             where: {
                 patientId,
                 doctorId,
-                appointmentDate: today,
+                appointmentDate,
                 status: 'WAITING',
             },
         });
 
         if (existing) {
-            return res.status(409).json({ message: 'Appointment already exists for today' });
+            return res.status(409).json({ message: 'Patient already has a waiting appointment with this doctor on this date' });
         }
 
         const lastAppointment = await prisma.appointment.findFirst({
             where: {
                 doctorId,
-                appointmentDate: today,
+                appointmentDate,
             },
             orderBy: {
                 tokenNumber: 'desc',
@@ -61,13 +69,13 @@ export const bookAppointment = async (req: Request, res: Response) => {
             data: {
                 patientId,
                 doctorId,
-                appointmentDate: today,
+                appointmentDate,
                 tokenNumber: nextToken,
             },
         });
 
         logger.info(
-            `Appointment booked successfully | appointmentId=${appointment.id} | tokenNumber=${nextToken}`,
+            `Appointment booked successfully | appointmentId=${appointment.id} | tokenNumber=${nextToken} | date=${appointmentDate.toISOString()}`,
         );
 
         res.status(201).json({ message: 'Appointment booked successfully', appointment });

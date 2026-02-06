@@ -33,8 +33,8 @@ export const appointmentService = {
     /**
      * Book a new appointment
      */
-    bookAppointment: async (patientId: string, doctorId: string): Promise<any> => {
-        const response = await appointmentApi.post('/appointment/book', { patientId, doctorId });
+    bookAppointment: async (patientId: string, doctorId: string, appointmentDate?: string): Promise<any> => {
+        const response = await appointmentApi.post('/appointment/book', { patientId, doctorId, appointmentDate });
         return response.data;
     }
 };

@@ -1,15 +1,27 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Users, Calendar, UserPlus, Clock, Loader2, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, Calendar, UserPlus, Clock, Loader2, RefreshCw } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/Dialog';
+import { Toast, useToast } from '../../components/ui/Toast';
 import { appointmentService } from '../../api/appointment.service';
 import { patientService } from '../../api/patient.service';
 import { doctorService } from '../../api/doctor.service';
+import PatientSearch from '../../components/receptionist/PatientSearch';
+import PatientRegistrationForm from '../../components/receptionist/PatientRegistrationForm';
+import AppointmentBookingModal from '../../components/receptionist/AppointmentBookingModal';
+import DailyOPDQueue from '../../components/receptionist/DailyOPDQueue';
 import type { Appointment } from '../../types/appointment';
+import type { Patient } from '../../types/patient';
 
 const ReceptionistDashboard: React.FC = () => {
-    const navigate = useNavigate();
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [loading, setLoading] = useState(true);
+    const { toast, showToast, hideToast } = useToast();
+
+    // Modal states
+    const [showPatientSearch, setShowPatientSearch] = useState(false);
+    const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+    const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+    const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
     const fetchDashboardData = async () => {
         try {
@@ -35,6 +47,7 @@ const ReceptionistDashboard: React.FC = () => {
             setAppointments(enrichedData);
         } catch (error) {
             console.error('Failed to fetch receptionist dashboard data:', error);
+            showToast('Failed to load dashboard data', 'error');
         } finally {
             setLoading(false);
         }
@@ -44,175 +57,224 @@ const ReceptionistDashboard: React.FC = () => {
         fetchDashboardData();
     }, []);
 
+    const handlePatientSelect = (patient: Patient) => {
+        setSelectedPatient(patient);
+        setShowPatientSearch(false);
+        setShowAppointmentModal(true);
+    };
+
+    const handleRegistrationSuccess = async (patientPhone: string) => {
+        showToast('Patient registered successfully!', 'success');
+        setShowRegistrationForm(false);
+
+        // Fetch the newly created patient and open appointment modal
+        try {
+            const response = await patientService.listPatients(1, 100);
+            const newPatient = response.data.find(p => p.phone === patientPhone);
+            if (newPatient) {
+                setSelectedPatient(newPatient);
+                setShowAppointmentModal(true);
+            }
+        } catch (error) {
+            console.error('Failed to fetch new patient:', error);
+        }
+    };
+
+
+
+    const handleAppointmentSuccess = () => {
+        showToast('Appointment booked successfully!', 'success');
+        setShowAppointmentModal(false);
+        setSelectedPatient(null);
+        fetchDashboardData();
+    };
+
+    const handleBookAppointment = () => {
+        setShowPatientSearch(true);
+    };
+
     const waitingAppointments = appointments.filter(app => app.status === 'WAITING' || app.status === 'LAB_TESTS');
     const todayCount = appointments.length;
+    const completedCount = appointments.filter(app => app.status === 'COMPLETED').length;
 
     return (
-        <div className="animate-in fade-in duration-500">
-            <div className="flex items-center justify-between mb-8">
+        <div className="px-8 pb-8 pt-2 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">Receptionist Dashboard</h1>
-                    <p className="text-gray-500 font-medium">Manage patient check-ins and registrations</p>
+                    <h1 className="text-3xl font-bold text-[#111827] tracking-tight">Receptionist Dashboard</h1>
+                    <p className="text-[#6B7280] mt-1 flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                    </p>
                 </div>
-                <div className="bg-white px-4 py-2 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    <span className="text-sm font-bold text-gray-600 uppercase tracking-widest leading-none">Live System</span>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-gray-100/50 transition-all group overflow-hidden relative">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-[4rem] -mr-8 -mt-8 transition-transform group-hover:scale-110" />
-                    <div className="relative">
-                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                            <Users className="w-6 h-6" />
-                        </div>
-                        <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">OPD Queue</p>
-                        <p className="text-3xl font-black text-gray-900 mt-1">{loading ? '...' : waitingAppointments.length}</p>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-gray-100/50 transition-all group overflow-hidden relative">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-green-50 rounded-bl-[4rem] -mr-8 -mt-8 transition-transform group-hover:scale-110" />
-                    <div className="relative">
-                        <div className="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-green-600 group-hover:text-white transition-all">
-                            <Calendar className="w-6 h-6" />
-                        </div>
-                        <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Appointments</p>
-                        <p className="text-3xl font-black text-gray-900 mt-1">{loading ? '...' : todayCount}</p>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-gray-100/50 transition-all group overflow-hidden relative">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-[4rem] -mr-8 -mt-8 transition-transform group-hover:scale-110" />
-                    <div className="relative">
-                        <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-purple-600 group-hover:text-white transition-all">
-                            <UserPlus className="w-6 h-6" />
-                        </div>
-                        <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">New</p>
-                        <p className="text-3xl font-black text-gray-900 mt-1">12</p>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-gray-100/50 transition-all group overflow-hidden relative">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-bl-[4rem] -mr-8 -mt-8 transition-transform group-hover:scale-110" />
-                    <div className="relative">
-                        <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-orange-600 group-hover:text-white transition-all">
-                            <Clock className="w-6 h-6" />
-                        </div>
-                        <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Wait Time</p>
-                        <p className="text-3xl font-black text-gray-900 mt-1">15m</p>
-                    </div>
+                <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm flex items-center gap-2.5">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                    <span className="text-sm font-medium text-gray-700">Live System</span>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-xl font-black text-gray-900 tracking-tight">Real-time OPD Queue</h2>
-                        <button
-                            onClick={() => navigate('/appointments')}
-                            className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all"
-                        >
-                            Full List
-                        </button>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-600">OPD Queue</p>
+                            <p className="text-2xl font-semibold text-gray-900 mt-1">{loading ? '...' : waitingAppointments.length}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
+                            <Users className="w-6 h-6 text-teal-600" />
+                        </div>
                     </div>
+                </div>
 
-                    <div className="space-y-4">
-                        {loading ? (
-                            <div className="flex flex-col items-center justify-center py-20 space-y-4">
-                                <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
-                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Loading Queue...</p>
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-600">Today's Total</p>
+                            <p className="text-2xl font-semibold text-gray-900 mt-1">{loading ? '...' : todayCount}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <Calendar className="w-6 h-6 text-blue-600" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-600">Completed</p>
+                            <p className="text-2xl font-semibold text-gray-900 mt-1">{loading ? '...' : completedCount}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                            <UserPlus className="w-6 h-6 text-emerald-600" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-600">Avg Wait</p>
+                            <p className="text-2xl font-semibold text-gray-900 mt-1">15m</p>
+                        </div>
+                        <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+                            <Clock className="w-6 h-6 text-amber-600" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8">
+                <button
+                    onClick={handleBookAppointment}
+                    className="group bg-blue-600 hover:bg-blue-700 p-6 rounded-lg shadow-sm transition-all text-left"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Calendar className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-semibold text-white">Book Appointment</h3>
+                            <p className="text-sm text-blue-100 mt-0.5">Schedule OPD consultation</p>
+                        </div>
+                    </div>
+                </button>
+
+                <button
+                    onClick={() => setShowRegistrationForm(true)}
+                    className="group bg-teal-600 hover:bg-teal-700 p-6 rounded-lg shadow-sm transition-all text-left"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <UserPlus className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-semibold text-white">Register Patient</h3>
+                            <p className="text-sm text-teal-100 mt-0.5">Add new patient profile</p>
+                        </div>
+                    </div>
+                </button>
+
+                <button
+                    onClick={fetchDashboardData}
+                    disabled={loading}
+                    className="group bg-gray-700 hover:bg-gray-800 p-6 rounded-lg shadow-sm transition-all text-left disabled:opacity-50"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                            {loading ? (
+                                <Loader2 className="w-6 h-6 text-white animate-spin" />
+                            ) : (
+                                <RefreshCw className="w-6 h-6 text-white" />
+                            )}
+                        </div>
+                        <div>
+                            <h3 className="text-base font-semibold text-white">Refresh Queue</h3>
+                            <p className="text-sm text-gray-300 mt-0.5">Update real-time data</p>
+                        </div>
+                    </div>
+                </button>
+            </div>
+
+            {/* Daily OPD Queue */}
+            <DailyOPDQueue appointments={appointments} loading={loading} />
+
+            {/* Patient Search Modal */}
+            <Dialog open={showPatientSearch} onOpenChange={setShowPatientSearch}>
+                <DialogContent className="sm:max-w-[650px] rounded-lg p-6">
+                    <DialogHeader className="mb-4">
+                        <DialogTitle className="text-xl font-semibold text-gray-900">Find Patient</DialogTitle>
+                    </DialogHeader>
+                    <PatientSearch
+                        onPatientSelect={handlePatientSelect}
+                        onCreateNew={() => { }}
+                    />
+                </DialogContent>
+            </Dialog>
+
+            {/* Patient Registration Modal */}
+            <Dialog open={showRegistrationForm} onOpenChange={setShowRegistrationForm}>
+                <DialogContent className="sm:max-w-[650px] rounded-lg p-0 border-none shadow-2xl [&>button]:hidden bg-transparent">
+                    <div className="bg-white rounded-lg p-6">
+                        <DialogHeader className="mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center border border-teal-100">
+                                    <UserPlus className="w-5 h-5 text-teal-600" />
+                                </div>
+                                <div>
+                                    <DialogTitle className="text-xl font-bold text-gray-900">Register Patient</DialogTitle>
+                                    <p className="text-xs text-gray-500 font-medium mt-0.5">Create a new patient profile</p>
+                                </div>
                             </div>
-                        ) : waitingAppointments.length === 0 ? (
-                            <div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200">
-                                <Users className="w-12 h-12 mx-auto mb-4 text-gray-200" />
-                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Queue is currently empty</p>
-                            </div>
-                        ) : (
-                            waitingAppointments.slice(0, 5).map((app, index) => (
-                                <div key={app.id} className="flex items-center gap-5 p-5 bg-gray-50 rounded-[2rem] hover:bg-white hover:shadow-xl hover:shadow-gray-100 transition-all border border-transparent hover:border-gray-100 group">
-                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl shadow-sm transition-all ${index === 0 ? 'bg-blue-600 text-white shadow-blue-100 ring-4 ring-blue-50' : 'bg-white text-gray-400 group-hover:text-blue-600'}`}>
-                                        {index + 1}
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="font-black text-gray-900 leading-none">{app.patient?.name || 'Unknown Patient'}</p>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-white px-2 py-0.5 rounded-md border border-gray-100">
-                                                Token: {app.tokenNumber}
-                                            </span>
-                                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">
-                                                Dr. {app.doctor?.name || 'Unknown'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <span className={`text-[10px] font-black px-3 py-1 rounded-full border uppercase tracking-widest ${app.status === 'WAITING' ? 'bg-yellow-50 text-yellow-600 border-yellow-100' : 'bg-purple-50 text-purple-600 border-purple-100'
-                                            }`}>
-                                            {app.status === 'WAITING' ? 'Waiting' : 'Lab Tests'}
-                                        </span>
-                                    </div>
-                                </div>
-                            ))
-                        )}
+                        </DialogHeader>
+                        <PatientRegistrationForm
+                            onSuccess={handleRegistrationSuccess}
+                            onCancel={() => setShowRegistrationForm(false)}
+                        />
                     </div>
-                </div>
+                </DialogContent>
+            </Dialog>
 
-                <div className="space-y-8">
-                    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col h-full">
-                        <h2 className="text-xl font-black text-gray-900 tracking-tight mb-8">Quick Actions</h2>
-                        <div className="grid grid-cols-1 gap-4 flex-1">
-                            <button
-                                onClick={() => navigate('/receptionist/add-patient')}
-                                className="group flex items-center justify-between p-6 bg-blue-50 rounded-[2rem] hover:bg-blue-600 transition-all"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
-                                        <UserPlus className="w-6 h-6" />
-                                    </div>
-                                    <div className="text-left">
-                                        <p className="font-black text-blue-900 group-hover:text-white transition-colors">Register Patient</p>
-                                        <p className="text-xs font-bold text-blue-400 group-hover:text-blue-100 transition-colors">New patient onboarding</p>
-                                    </div>
-                                </div>
-                                <ChevronRight className="w-5 h-5 text-blue-200 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                            </button>
+            {/* Appointment Booking Modal */}
+            <AppointmentBookingModal
+                isOpen={showAppointmentModal}
+                onClose={() => {
+                    setShowAppointmentModal(false);
+                    setSelectedPatient(null);
+                }}
+                patient={selectedPatient}
+                onSuccess={handleAppointmentSuccess}
+            />
 
-                            <button
-                                onClick={() => navigate('/receptionist/book')}
-                                className="group flex items-center justify-between p-6 bg-green-50 rounded-[2rem] hover:bg-green-600 transition-all"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform">
-                                        <Calendar className="w-6 h-6" />
-                                    </div>
-                                    <div className="text-left">
-                                        <p className="font-black text-green-900 group-hover:text-white transition-colors">Book Appointment</p>
-                                        <p className="text-xs font-bold text-green-400 group-hover:text-green-100 transition-colors">Schedule OPD session</p>
-                                    </div>
-                                </div>
-                                <ChevronRight className="w-5 h-5 text-green-200 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                            </button>
-
-                            <button
-                                onClick={() => navigate('/appointments')}
-                                className="group flex items-center justify-between p-6 bg-purple-50 rounded-[2rem] hover:bg-purple-600 transition-all"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
-                                        <Users className="w-6 h-6" />
-                                    </div>
-                                    <div className="text-left">
-                                        <p className="font-black text-purple-900 group-hover:text-white transition-colors">All Activities</p>
-                                        <p className="text-xs font-bold text-purple-400 group-hover:text-purple-100 transition-colors">View full system logs</p>
-                                    </div>
-                                </div>
-                                <ChevronRight className="w-5 h-5 text-purple-200 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            {/* Toast Notifications */}
+            <Toast
+                message={toast.message}
+                type={toast.type}
+                isOpen={toast.isOpen}
+                onClose={hideToast}
+            />
         </div>
     );
 };

@@ -115,18 +115,33 @@ export const listPatients = async (req: Request, res: Response) => {
     try {
         const page = Number(req.query.page || 1);
         const limit = Number(req.query.limit || 5);
+        const search = req.query.search as string;
         const skip = (page - 1) * limit
 
-        logger.info(`List patients request | page=${page} | limit=${limit}`);
+        logger.info(`List patients request | page=${page} | limit=${limit} | search=${search || 'none'}`);
+
+        const whereClause: any = { isActive: true };
+
+        if (search) {
+            const isNumeric = !isNaN(Number(search));
+            whereClause.OR = [
+                { name: { contains: search, mode: 'insensitive' } },
+                { phone: { contains: search } },
+            ];
+
+            if (isNumeric) {
+                whereClause.OR.push({ patientId: Number(search) });
+            }
+        }
 
         const [patients, total] = await Promise.all([
             prisma.patient.findMany({
-                where: { isActive: true },
+                where: whereClause,
                 skip,
                 take: limit,
                 orderBy: { createdAt: "desc" }
             }),
-            prisma.patient.count({ where: { isActive: true } })
+            prisma.patient.count({ where: whereClause })
         ]);
 
         logger.info(`Patients listed successfully | page=${page} | count=${patients.length} | total=${total}`);

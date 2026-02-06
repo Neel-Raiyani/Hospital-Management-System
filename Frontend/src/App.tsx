@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext.tsx';
 import { ProtectedRoute } from './components/ProtectedRoute.tsx';
 import Layout from './components/layout/Layout.tsx';
 import AdminLayout from './components/layout/AdminLayout.tsx';
+import { ReceptionistLayout } from './components/layout/ReceptionistLayout.tsx';
 import LoginPage from './pages/LoginPage.tsx';
 import Unauthorized from './pages/Unauthorized.tsx';
 import ForcePasswordChange from './pages/ForcePasswordChange.tsx';
@@ -13,9 +14,9 @@ import Profile from './pages/Profile.tsx';
 import DoctorDashboard from './pages/doctor/DoctorDashboard.tsx';
 import LabDashboard from './pages/lab/LabDashboard.tsx';
 import ReceptionistDashboard from './pages/receptionist/ReceptionistDashboard.tsx';
+import ReceptionistAppointments from './pages/receptionist/ReceptionistAppointments.tsx';
 import BookAppointment from './pages/receptionist/BookAppointment.tsx';
 import AppointmentList from './pages/common/AppointmentList.tsx';
-import AddPatient from './pages/receptionist/AddPatient.tsx';
 import PatientList from './pages/receptionist/PatientList.tsx';
 
 function App() {
@@ -43,6 +44,23 @@ function App() {
             <Route path="settings" element={<Settings />} />
             <Route path="profile" element={<Profile />} />
             <Route path="profile/:userId" element={<Profile />} />
+            <Route index element={<Navigate to="dashboard" replace />} />
+          </Route>
+
+          {/* Receptionist Routes - Standalone with ReceptionistLayout */}
+          <Route
+            path="/receptionist"
+            element={
+              <ProtectedRoute allowedRoles={['RECEPTIONIST']}>
+                <ReceptionistLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="dashboard" element={<ReceptionistDashboard />} />
+            <Route path="appointments" element={<ReceptionistAppointments />} />
+            <Route path="patients" element={<PatientList />} />
+            <Route path="book-appointment" element={<BookAppointment />} />
+            <Route path="book" element={<Navigate to="/receptionist/book-appointment" replace />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 
@@ -84,40 +102,6 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['LAB']}>
                   <LabDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Receptionist Routes */}
-            <Route
-              path="receptionist/dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['RECEPTIONIST']}>
-                  <ReceptionistDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="receptionist/book"
-              element={
-                <ProtectedRoute allowedRoles={['RECEPTIONIST']}>
-                  <BookAppointment />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="receptionist/add-patient"
-              element={
-                <ProtectedRoute allowedRoles={['RECEPTIONIST']}>
-                  <AddPatient />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="receptionist/patients"
-              element={
-                <ProtectedRoute allowedRoles={['RECEPTIONIST']}>
-                  <PatientList />
                 </ProtectedRoute>
               }
             />
