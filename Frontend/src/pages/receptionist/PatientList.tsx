@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     Search, UserPlus, Phone, User, Calendar, Users,
-    Loader2, ChevronLeft, ChevronRight,
-    Hash, Shield, Activity, XCircle
+    ChevronLeft, ChevronRight, ChevronDown, X,
+    Hash, Shield, Activity
 } from 'lucide-react';
+import { Loader } from '../../components/ui/Loader';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/Dialog';
 import PatientRegistrationForm from '../../components/receptionist/PatientRegistrationForm';
 import { patientService } from '../../api/patient.service';
@@ -20,11 +21,6 @@ const PatientList: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ACTIVE');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [showRegistrationModal, setShowRegistrationModal] = useState(false);
-    const [confirmDialog, setConfirmDialog] = useState<{ show: boolean; patientId: string; patientName: string }>({
-        show: false,
-        patientId: '',
-        patientName: ''
-    });
 
     const fetchPatients = useCallback(async () => {
         setLoading(true);
@@ -50,16 +46,7 @@ const PatientList: React.FC = () => {
         fetchPatients();
     };
 
-    const handleDeactivate = async (id: string) => {
-        try {
-            await patientService.deactivatePatient(id);
-            toast.success('Patient deactivated successfully');
-            setConfirmDialog({ show: false, patientId: '', patientName: '' });
-            fetchPatients();
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to deactivate patient');
-        }
-    };
+
 
     const filteredPatients = patients.filter((patient: Patient) => {
         const matchesSearch =
@@ -75,88 +62,102 @@ const PatientList: React.FC = () => {
         return matchesSearch && matchesStatus;
     }).sort((a, b) => {
         if (sortOrder === 'asc') {
-            return a.name.localeCompare(b.name);
+            return a.patientId - b.patientId;
         } else {
-            return b.name.localeCompare(a.name);
+            return b.patientId - a.patientId;
         }
     });
 
     const totalPages = Math.ceil(total / limit);
 
     return (
-        <div className="px-8 pb-8 pt-2 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="px-4 pb-4 pt-2 max-w-[1600px] mx-auto space-y-4 animate-in fade-in duration-500">
             {/* Header Area */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-[#111827] tracking-tight">Patients</h1>
-                    <p className="text-[#6B7280] mt-1 flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        Manage and view all registered patients
+                    <p className="text-[#6B7280] text-xs mt-1 flex items-center gap-2">
+                        <Users className="w-3.5 h-3.5" />
+                        Manage registered patient profiles
                     </p>
                 </div>
                 <button
                     onClick={() => setShowRegistrationModal(true)}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-teal-600 text-white rounded-lg font-bold hover:bg-teal-700 shadow-sm transition-all active:scale-95"
+                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 shadow-md shadow-teal-600/10 transition-all active:scale-95 text-sm"
                 >
-                    <UserPlus className="w-5 h-5" />
-                    Register New Patient
+                    <UserPlus className="w-4.5 h-4.5" />
+                    New Patient
                 </button>
             </div>
 
             {/* Filters and Search */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 space-y-4">
-                <div className="flex flex-col lg:flex-row gap-4">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-2">
+                <div className="flex flex-col lg:flex-row gap-3">
+                    <div className="relative flex-1 group">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 group-focus-within:text-teal-500 transition-colors" />
                         <input
                             type="text"
                             placeholder="Search by name, phone or ID..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 transition-all text-sm font-medium"
+                            className="w-full pl-11 pr-11 h-10 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-4 focus:ring-teal-500/5 focus:border-teal-400 focus:bg-white transition-all text-sm font-medium shadow-sm shadow-black/5"
                         />
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-200 rounded-lg transition-all text-gray-400 hover:text-gray-600 active:scale-95"
+                            >
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        )}
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar lg:flex-row flex-col lg:items-center items-start lg:gap-4 gap-2">
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar flex-1 whitespace-nowrap">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mr-2">Filter Status:</span>
-                        {(['ALL', 'ACTIVE', 'INACTIVE'] as const).map((s) => (
-                            <button
-                                key={s}
-                                onClick={() => setStatusFilter(s)}
-                                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 border ${statusFilter === s
-                                    ? 'bg-teal-600 text-white border-teal-600'
-                                    : 'bg-white text-gray-600 border-gray-200 hover:border-teal-600 hover:text-teal-600'
-                                    }`}
-                            >
-                                {s}
-                            </button>
-                        ))}
+                <div className="flex items-center gap-6 border-t border-gray-50 pt-2 flex-wrap">
+                    {/* Status Segmented Control */}
+                    <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Patient Status</span>
+                        <div className="flex bg-gray-100 p-1 rounded-xl items-center relative h-9">
+                            {(['ALL', 'ACTIVE', 'INACTIVE'] as const).map((s) => (
+                                <button
+                                    key={s}
+                                    onClick={() => setStatusFilter(s)}
+                                    className={`relative z-10 px-4 h-7 flex items-center justify-center rounded-lg text-[10px] font-bold transition-all duration-300 whitespace-nowrap ${statusFilter === s ? 'text-teal-700' : 'text-gray-500 hover:text-gray-900'
+                                        }`}
+                                >
+                                    {statusFilter === s && (
+                                        <div className="absolute inset-0 bg-white rounded-lg shadow-sm animate-in fade-in zoom-in-95 duration-200" style={{ zIndex: -1 }} />
+                                    )}
+                                    {s}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-2 lg:border-l lg:border-gray-100 lg:pl-4 whitespace-nowrap">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mr-2">Sort Name:</span>
+                    {/* Sort Control */}
+                    <div className="flex items-center gap-3 border-l border-gray-100 pl-6">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Sort Order</span>
                         <button
                             onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-all border border-gray-200 text-xs font-bold"
+                            className={`flex items-center gap-2 h-9 px-4 rounded-xl font-bold text-[10px] transition-all duration-200 border ${sortOrder === 'asc'
+                                ? 'bg-white border-gray-200 text-gray-700 shadow-sm'
+                                : 'bg-teal-50 border-teal-100 text-teal-700 shadow-sm shadow-teal-600/5'
+                                }`}
                         >
-                            {sortOrder === 'asc' ? (
-                                <>Ascending <span className="text-teal-600">↑</span></>
-                            ) : (
-                                <>Descending <span className="text-teal-600">↓</span></>
-                            )}
+                            <div className={`transition-transform duration-300 ${sortOrder === 'desc' ? 'rotate-180' : ''}`}>
+                                <ChevronDown className="w-3.5 h-3.5" />
+                            </div>
+                            {sortOrder === 'asc' ? 'Oldest First' : 'Newest First'}
                         </button>
                     </div>
                 </div>
             </div>
 
             {/* Patient Table */}
-            <div className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-100">
+            <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
                 {loading ? (
-                    <div className="py-20 flex flex-col items-center justify-center text-gray-500">
-                        <Loader2 className="w-10 h-10 animate-spin text-teal-600 mb-4" />
-                        <p className="font-medium">Loading patients...</p>
+                    <div className="py-24 flex flex-col items-center justify-center text-gray-500">
+                        <Loader size="md" text="Loading Patients..." />
                     </div>
                 ) : filteredPatients.length === 0 ? (
                     <div className="py-20 flex flex-col items-center justify-center text-center px-4">
@@ -227,8 +228,7 @@ const PatientList: React.FC = () => {
                                     return (
                                         <tr
                                             key={patient.id}
-                                            className="border-b border-gray-50 last:border-0 hover:bg-gray-50/30 transition-colors group cursor-pointer"
-                                            onClick={() => patient.isActive && setConfirmDialog({ show: true, patientId: patient.id, patientName: patient.name })}
+                                            className="border-b border-gray-50 last:border-0 hover:bg-gray-50/30 transition-colors group"
                                         >
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded">
@@ -249,10 +249,10 @@ const PatientList: React.FC = () => {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className="text-sm font-bold text-gray-700 capitalize">{patient.gender.toLowerCase()}</span>
-                                                <span className="text-sm text-gray-500">, {age} yrs</span>
+                                                <span className="text-sm text-gray-500 font-medium">, {age} yrs</span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-bold text-gray-900">{patient.phone}</div>
+                                                <div className="text-sm font-bold text-[#111827]">{patient.phone}</div>
                                             </td>
                                             <td className="px-6 py-4 text-right whitespace-nowrap">
                                                 <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded inline-block ${patient.isActive
@@ -333,50 +333,7 @@ const PatientList: React.FC = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Confirmation Dialog */}
-            {confirmDialog.show && (
-                <>
-                    {/* Backdrop */}
-                    <div
-                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999]"
-                        onClick={() => setConfirmDialog({ show: false, patientId: '', patientName: '' })}
-                    />
 
-                    {/* Dialog */}
-                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
-                        <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-6 pointer-events-auto animate-in zoom-in duration-200">
-                            <div className="flex items-start gap-4">
-                                <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-                                    <XCircle className="w-6 h-6 text-red-600" />
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                                        Deactivate Patient?
-                                    </h3>
-                                    <p className="text-sm text-gray-600">
-                                        Are you sure you want to deactivate <span className="font-bold text-gray-900">{confirmDialog.patientName}</span>? This patient will no longer be visible in active lists.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3 mt-6">
-                                <button
-                                    onClick={() => setConfirmDialog({ show: false, patientId: '', patientName: '' })}
-                                    className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={() => handleDeactivate(confirmDialog.patientId)}
-                                    className="flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/30 transition-all"
-                                >
-                                    Yes, Deactivate
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
         </div>
     );
 };

@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import {
     Search, User, Calendar, Clock,
     ChevronRight, ChevronLeft, CheckCircle,
-    Loader2, Stethoscope,
+    Stethoscope,
     Hash, Info, Check, Zap
 } from 'lucide-react';
+import { Loader } from '../../components/ui/Loader';
 import { useNavigate } from 'react-router-dom';
 import { patientService } from '../../api/patient.service';
 import { doctorService, type Doctor } from '../../api/doctor.service';
@@ -54,19 +55,30 @@ const BookAppointment: React.FC = () => {
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [bookingDetails, setBookingDetails] = useState<any>(null);
     const [paymentType, setPaymentType] = useState<'CASH' | 'ONLINE' | null>(null);
+    const [totalPatients, setTotalPatients] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     // Debounced patient search
     useEffect(() => {
         const timer = setTimeout(() => {
+            setCurrentPage(1); // Reset to first page on search
             if (searchQuery.length >= 2) {
-                fetchPatients(searchQuery);
+                fetchPatients(1, searchQuery);
             } else if (searchQuery.length === 0) {
-                fetchPatients(); // Fetch recent patients
+                fetchPatients(1); // Fetch recent patients
             }
         }, 500);
 
         return () => clearTimeout(timer);
     }, [searchQuery]);
+
+    // Fetch patients when page changes
+    useEffect(() => {
+        if (searchQuery.length >= 2 || searchQuery.length === 0) {
+            fetchPatients(currentPage, searchQuery || undefined);
+        }
+    }, [currentPage]);
 
     // Reset payment type when modal opens
     useEffect(() => {
@@ -85,11 +97,12 @@ const BookAppointment: React.FC = () => {
         fetchDoctors();
     }, []);
 
-    const fetchPatients = async (query?: string) => {
+    const fetchPatients = async (page: number = 1, query?: string) => {
         try {
             setIsLoading(true);
-            const response = await patientService.listPatients(1, 5, query);
+            const response = await patientService.listPatients(page, itemsPerPage, query);
             setPatients(response.data);
+            setTotalPatients(response.total);
         } catch (error) {
             console.error('Failed to fetch patients:', error);
             toast.error('Failed to load patients');
@@ -144,191 +157,393 @@ const BookAppointment: React.FC = () => {
     };
 
     return (
-        <div className="px-8 pb-8 pt-2 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="h-[calc(100vh-140px)] flex flex-col space-y-4 animate-in fade-in duration-500 overflow-hidden">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-[#111827] tracking-tight">Book Appointment</h1>
-                    <p className="text-[#6B7280] mt-1 flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        Today: {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                    <p className="text-[#6B7280] text-xs mt-1 flex items-center gap-2">
+                        <Calendar className="w-3.5 h-3.5" />
+                        Schedule and confirm new medical appointments
                     </p>
                 </div>
-                <div className="hidden md:flex bg-white rounded-lg shadow-sm border border-gray-100 p-1">
-                    {[1, 2].map((s) => (
-                        <div
-                            key={s}
-                            className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${step === s ? 'bg-teal-600 text-white' : 'text-gray-400'}`}
-                        >
-                            {s === 1 ? 'Patient' : 'Doctor'}
-                        </div>
-                    ))}
+
+                {/* Step Indicator */}
+                <div className="flex items-center gap-3">
+                    {[
+                        { num: 1, label: 'Patient', icon: User },
+                        { num: 2, label: 'Doctor', icon: Stethoscope }
+                    ].map((s, idx) => {
+                        const Icon = s.icon;
+                        const isActive = step === s.num;
+                        const isCompleted = step > s.num;
+                        return (
+                            <React.Fragment key={s.num}>
+                                <div
+                                    onClick={() => isCompleted && setStep(s.num)}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all cursor-pointer ${isActive
+                                        ? 'bg-teal-600 text-white shadow-sm'
+                                        : isCompleted
+                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                                            : 'bg-gray-100 text-gray-400'
+                                        }`}
+                                >
+                                    <div className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold ${isActive ? 'bg-white/20' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-gray-200'
+                                        }`}>
+                                        {isCompleted ? <Check className="w-3.5 h-3.5" /> : s.num}
+                                    </div>
+                                    <span className="font-semibold text-sm hidden sm:block">{s.label}</span>
+                                    <Icon className="w-4 h-4 sm:hidden" />
+                                </div>
+                                {idx === 0 && (
+                                    <ChevronRight className={`w-5 h-5 ${step > 1 ? 'text-emerald-500' : 'text-gray-300'}`} />
+                                )}
+                            </React.Fragment>
+                        );
+                    })}
                 </div>
             </div>
 
-            <div className="space-y-6">
-                {/* STEP 1: PATIENT SEARCH */}
-                {step === 1 && (
-                    <div className="bg-white rounded-lg border border-gray-100 overflow-hidden">
-                        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                                <User className="w-4 h-4 text-teal-600" />
-                                Find Patient
-                            </h3>
-                            <span className="text-xs text-gray-400">{patients.length} found</span>
-                        </div>
-
-                        <div className="p-4">
-                            <div className="relative mb-4">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                <input
-                                    type="text"
-                                    placeholder="Search by name, phone or ID..."
-                                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/20 transition-all text-sm"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                                {isLoading && (
-                                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-teal-500 animate-spin" />
-                                )}
-                            </div>
-
-                            <div className="border border-gray-100 rounded-lg overflow-hidden max-h-[280px] overflow-y-auto">
-                                {patients.length > 0 ? (
-                                    <div className="divide-y divide-gray-50">
-                                        {patients.map((patient, index) => (
-                                            <div
-                                                key={patient.id}
-                                                onClick={() => setSelectedPatient(patient)}
-                                                style={{ animationDelay: `${index * 50}ms` }}
-                                                className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-all duration-200 animate-in fade-in slide-in-from-left-2 ${selectedPatient?.id === patient.id
-                                                    ? 'bg-teal-50 border-l-2 border-teal-500 shadow-sm'
-                                                    : 'hover:bg-gray-50 hover:shadow-sm border-l-2 border-transparent hover:translate-x-1'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-semibold text-sm">
-                                                        {patient.name[0].toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium text-gray-900 text-sm">{patient.name}</p>
-                                                        <div className="flex items-center gap-2 text-xs text-gray-400">
-                                                            <span>{patient.patientId}</span>
-                                                            <span>•</span>
-                                                            <span>{patient.phone}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                {selectedPatient?.id === patient.id && (
-                                                    <Check className="w-4 h-4 text-teal-600 animate-in zoom-in duration-200" />
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="py-8 text-center text-gray-400">
-                                        <User className="w-6 h-6 mx-auto mb-2 opacity-40" />
-                                        <p className="text-sm">Search for a patient</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="px-5 py-4 border-t border-gray-100 flex justify-end">
-                            <button
-                                disabled={!selectedPatient}
-                                onClick={() => setStep(2)}
-                                className="bg-teal-600 text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-teal-700 hover:shadow-md hover:shadow-teal-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 active:scale-95"
+            {/* Main Content */}
+            <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
+                {/* Left Panel - Main Form */}
+                <div className="lg:col-span-2 flex flex-col overflow-hidden">
+                    <AnimatePresence mode="wait">
+                        {/* STEP 1: PATIENT SEARCH */}
+                        {step === 1 && (
+                            <motion.div
+                                key="step-1"
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 10 }}
+                                transition={{ duration: 0.2 }}
+                                className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full"
                             >
-                                Next
-                                <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-                            </button>
-                        </div>
-                    </div>
-                )}
+                                <div className="shrink-0 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-teal-50 rounded-lg flex items-center justify-center border border-teal-100">
+                                            <User className="w-5 h-5 text-teal-600" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900">Select Patient</h3>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Search and select a patient</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-3 py-1 rounded-full uppercase tracking-widest">
+                                        {totalPatients} found
+                                    </span>
+                                </div>
 
-                {/* STEP 2: DOCTOR SELECTION */}
-                {step === 2 && (
-                    <div className="bg-white rounded-lg border border-gray-100 overflow-hidden">
-                        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                                <Stethoscope className="w-4 h-4 text-teal-600" />
-                                Select Doctor
-                            </h3>
-                            <span className="text-xs text-gray-400">{doctors.length} available</span>
-                        </div>
-
-                        <div className="p-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {doctors.map((doctor, index) => {
-                                    const available = isDoctorAvailable(doctor.opdStartTime, doctor.opdEndTime);
-                                    return (
-                                        <div
-                                            key={doctor.id}
-                                            onClick={() => {
-                                                if (available) {
-                                                    setSelectedDoctor(doctor);
-                                                }
-                                            }}
-                                            style={{ animationDelay: `${index * 75}ms` }}
-                                            className={`relative p-4 rounded-lg border transition-all duration-200 animate-in fade-in zoom-in-95 ${available ? 'cursor-pointer hover:border-teal-300 hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5' : 'cursor-not-allowed opacity-50 grayscale'} ${selectedDoctor?.id === doctor.id
-                                                ? 'border-teal-500 bg-teal-50 shadow-md shadow-teal-500/10'
-                                                : 'border-gray-100'
-                                                }`}
-                                        >
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                                                    Dr
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-gray-900 text-sm">{formatDoctorName(doctor.name)}</p>
-                                                    <p className="text-xs text-teal-600 font-medium">{doctor.specialization}</p>
-                                                </div>
-                                                {selectedDoctor?.id === doctor.id && (
-                                                    <Check className="w-4 h-4 text-teal-600 ml-auto animate-in zoom-in duration-200" />
-                                                )}
+                                <div className="flex-1 flex flex-col p-6 min-h-0">
+                                    {/* Search Input */}
+                                    <div className="shrink-0 relative mb-5">
+                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                        <input
+                                            type="text"
+                                            placeholder="Search by name, phone or patient ID..."
+                                            className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 focus:bg-white transition-all text-sm font-medium"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                        />
+                                        {isLoading && (
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                                <Loader size="sm" />
                                             </div>
+                                        )}
+                                    </div>
 
-                                            <div className="flex items-center justify-between text-xs text-gray-500 bg-gray-50 p-2 rounded-md">
-                                                <div className="flex items-center gap-1">
-                                                    <Clock className="w-3 h-3" />
-                                                    {doctor.opdStartTime} - {doctor.opdEndTime}
+                                    {/* Patient List */}
+                                    <div className="flex-1 border border-gray-100 rounded-xl overflow-hidden flex flex-col min-h-0 bg-white">
+                                        {isLoading && patients.length === 0 ? (
+                                            <div className="flex-1 flex items-center justify-center p-12">
+                                                <Loader size="md" text="Searching..." />
+                                            </div>
+                                        ) : patients.length > 0 ? (
+                                            <div className="divide-y divide-gray-50 overflow-y-auto flex-1">
+                                                {patients.map((patient, index) => (
+                                                    <motion.div
+                                                        key={patient.id}
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        transition={{ delay: index * 0.03 }}
+                                                        onClick={() => setSelectedPatient(selectedPatient?.id === patient.id ? null : patient)}
+                                                        className={`flex items-center justify-between px-4 py-3.5 cursor-pointer transition-all ${selectedPatient?.id === patient.id
+                                                            ? 'bg-teal-50 border-l-3 border-l-teal-500'
+                                                            : 'hover:bg-gray-50 border-l-3 border-l-transparent'
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-semibold text-sm ${selectedPatient?.id === patient.id
+                                                                ? 'bg-teal-600 text-white'
+                                                                : 'bg-gray-100 text-gray-600'
+                                                                }`}>
+                                                                {patient.name[0].toUpperCase()}
+                                                            </div>
+                                                            <div>
+                                                                <p className={`font-medium text-sm ${selectedPatient?.id === patient.id ? 'text-teal-900' : 'text-gray-900'
+                                                                    }`}>
+                                                                    {patient.name}
+                                                                </p>
+                                                                <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                                                                    <span className="font-medium">{patient.patientId}</span>
+                                                                    <span>•</span>
+                                                                    <span>{patient.phone}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        {selectedPatient?.id === patient.id && (
+                                                            <div className="w-6 h-6 bg-teal-600 rounded-md flex items-center justify-center">
+                                                                <Check className="w-3.5 h-3.5 text-white" />
+                                                            </div>
+                                                        )}
+                                                    </motion.div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="py-12 text-center flex-1 flex flex-col justify-center items-center">
+                                                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                                                    <User className="w-6 h-6 text-gray-400" />
                                                 </div>
-                                                <div className={`flex items-center gap-1 ${available ? 'text-emerald-600' : 'text-gray-400'}`}>
-                                                    <div className={`w-1.5 h-1.5 rounded-full ${available ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`} />
-                                                    {available ? 'Online' : 'Offline'}
-                                                </div>
+                                                <p className="text-[#111827] text-sm font-bold">Search for a patient</p>
+                                                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1">Enter at least 2 characters</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Pagination Controls */}
+                                    {totalPatients > itemsPerPage && (
+                                        <div className="shrink-0 flex items-center justify-between px-1 mt-4 mb-1">
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                                Page <span className="text-teal-600">{currentPage}</span> of {Math.ceil(totalPatients / itemsPerPage)}
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                                    disabled={currentPage === 1 || isLoading}
+                                                    className="p-1.5 rounded-md border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                                >
+                                                    <ChevronLeft className="w-4 h-4 text-gray-600" />
+                                                </button>
+                                                <button
+                                                    onClick={() => setCurrentPage(prev => (prev * itemsPerPage < totalPatients ? prev + 1 : prev))}
+                                                    disabled={currentPage * itemsPerPage >= totalPatients || isLoading}
+                                                    className="p-1.5 rounded-md border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                                >
+                                                    <ChevronRight className="w-4 h-4 text-gray-600" />
+                                                </button>
                                             </div>
                                         </div>
-                                    );
-                                })}
+                                    )}
+                                </div>
+
+                                <div className="shrink-0 px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                                    <button
+                                        disabled={!selectedPatient}
+                                        onClick={() => setStep(2)}
+                                        className="flex items-center gap-2 bg-teal-600 text-white px-6 py-2.5 rounded-lg font-medium text-sm hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                                    >
+                                        Continue
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {/* STEP 2: DOCTOR SELECTION */}
+                        {step === 2 && (
+                            <motion.div
+                                key="step-2"
+                                initial={{ opacity: 0, x: 10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.2 }}
+                                className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full"
+                            >
+                                <div className="shrink-0 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-teal-50 rounded-lg flex items-center justify-center border border-teal-100">
+                                            <Stethoscope className="w-5 h-5 text-teal-600" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900">Select Doctor</h3>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Choose an available doctor</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[9px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-widest border border-emerald-100">
+                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                        {doctors.filter(d => isDoctorAvailable(d.opdStartTime, d.opdEndTime)).length} available
+                                    </div>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
+                                        {doctors.map((doctor, index) => {
+                                            const available = isDoctorAvailable(doctor.opdStartTime, doctor.opdEndTime);
+                                            return (
+                                                <motion.div
+                                                    key={doctor.id}
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    transition={{ delay: index * 0.04 }}
+                                                    onClick={() => available && setSelectedDoctor(selectedDoctor?.id === doctor.id ? null : doctor)}
+                                                    className={`relative p-4 rounded-lg border-2 transition-all ${available
+                                                        ? 'cursor-pointer hover:shadow-md border-emerald-200 bg-emerald-50/40 hover:border-emerald-300'
+                                                        : 'cursor-not-allowed border-gray-200 bg-gray-100/50'
+                                                        } ${selectedDoctor?.id === doctor.id
+                                                            ? 'border-teal-500 bg-teal-50'
+                                                            : ''
+                                                        }`}
+                                                >
+                                                    {selectedDoctor?.id === doctor.id && (
+                                                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-teal-600 rounded-full flex items-center justify-center shadow-sm">
+                                                            <Check className="w-3.5 h-3.5 text-white" />
+                                                        </div>
+                                                    )}
+
+                                                    <div className="flex items-center gap-3 mb-3">
+                                                        <div className={`w-11 h-11 rounded-lg flex items-center justify-center font-bold text-sm ${selectedDoctor?.id === doctor.id
+                                                            ? 'bg-teal-600 text-white'
+                                                            : available
+                                                                ? 'bg-emerald-500 text-white'
+                                                                : 'bg-gray-300 text-gray-500'
+                                                            }`}>
+                                                            Dr
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className={`font-semibold text-sm truncate ${available ? 'text-gray-900' : 'text-gray-500'}`}>
+                                                                {formatDoctorName(doctor.name)}
+                                                            </p>
+                                                            <p className={`text-xs font-medium mt-0.5 ${available ? 'text-emerald-600' : 'text-gray-400'}`}>
+                                                                {doctor.specialization}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className={`flex items-center justify-between p-2.5 rounded-md ${available ? 'bg-emerald-100/50' : 'bg-gray-200/50'}`}>
+                                                        <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                                                            <Clock className="w-3.5 h-3.5 text-gray-400" />
+                                                            <span>{doctor.opdStartTime} - {doctor.opdEndTime}</span>
+                                                        </div>
+                                                        <div className={`flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded ${available
+                                                            ? 'bg-emerald-200 text-emerald-800'
+                                                            : 'bg-gray-300 text-gray-600'
+                                                            }`}>
+                                                            <div className={`w-1.5 h-1.5 rounded-full ${available ? 'bg-emerald-600 animate-pulse' : 'bg-gray-500'
+                                                                }`} />
+                                                            {available ? 'Available' : 'Not Available'}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-3 flex items-center justify-between">
+                                                        <span className="text-xs text-gray-400">Fee</span>
+                                                        <span className={`text-base font-bold ${available ? 'text-emerald-700' : 'text-gray-500'}`}>₹{doctor.checkupFee || 0}</span>
+                                                    </div>
+                                                </motion.div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                <div className="shrink-0 px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                                    <button
+                                        onClick={() => setStep(1)}
+                                        className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors"
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                        Back
+                                    </button>
+                                    <button
+                                        disabled={!selectedDoctor}
+                                        onClick={() => setIsConfirmModalOpen(true)}
+                                        className="flex items-center gap-2 bg-teal-600 text-white px-6 py-2.5 rounded-lg font-medium text-sm hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                                    >
+                                        Confirm Booking
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
+                {/* Right Panel - Summary */}
+                <div className="lg:col-span-1 h-full overflow-hidden">
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm h-full flex flex-col">
+                        <div className="px-5 py-4 border-b border-gray-100">
+                            <h3 className="font-bold text-[#111827] flex items-center gap-2">
+                                <Info className="w-4 h-4 text-teal-600" />
+                                Booking Summary
+                            </h3>
+                        </div>
+                        <div className="p-5 space-y-4 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+                            {/* Patient */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Patient</label>
+                                {selectedPatient ? (
+                                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                        <div className="w-9 h-9 bg-teal-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
+                                            {selectedPatient.name[0].toUpperCase()}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-gray-900 text-sm truncate">{selectedPatient.name}</p>
+                                            <p className="text-xs text-gray-500">{selectedPatient.patientId}</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-center">
+                                        <p className="text-xs text-gray-400">Select a patient</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Doctor */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Doctor</label>
+                                {selectedDoctor ? (
+                                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                        <div className="w-9 h-9 bg-teal-600 rounded-lg flex items-center justify-center text-white font-semibold text-xs">
+                                            Dr
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-gray-900 text-sm truncate">{formatDoctorName(selectedDoctor.name)}</p>
+                                            <p className="text-xs text-teal-600 font-medium">{selectedDoctor.specialization}</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-center">
+                                        <p className="text-xs text-gray-400">Select a doctor</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Date & Fee */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date</label>
+                                    <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                        <div className="flex items-center gap-2 text-sm font-bold text-gray-800">
+                                            <Calendar className="w-4 h-4 text-teal-600" />
+                                            {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fee</label>
+                                    <div className="p-3 bg-teal-50 rounded-xl border border-teal-100">
+                                        <p className="text-lg font-extrabold text-teal-700">
+                                            ₹{selectedDoctor?.checkupFee || 0}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
-                        <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
-                            <button
-                                onClick={() => setStep(1)}
-                                className="text-gray-500 hover:text-gray-900 font-medium text-sm flex items-center gap-1 transition-all duration-200 hover:-translate-x-0.5"
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                                Back
-                            </button>
-                            <button
-                                disabled={!selectedDoctor}
-                                onClick={() => setIsConfirmModalOpen(true)}
-                                className="bg-teal-600 text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-teal-700 hover:shadow-md hover:shadow-teal-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 active:scale-95"
-                            >
-                                Confirm
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
-                        </div>
                     </div>
-                )}
+                </div>
             </div>
 
             {/* Confirmation Dialog */}
             <Dialog open={isConfirmModalOpen} onOpenChange={setIsConfirmModalOpen}>
-                <DialogContent className="sm:max-w-[480px] rounded-lg overflow-hidden p-0 border border-gray-100 shadow-2xl">
+                <DialogContent className="sm:max-w-[460px] rounded-lg overflow-hidden p-0 border border-gray-200 shadow-xl">
                     <AnimatePresence mode="wait">
                         {!isSuccess ? (
                             <motion.div
@@ -338,10 +553,10 @@ const BookAppointment: React.FC = () => {
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 transition={{ duration: 0.2 }}
                             >
-                                <DialogHeader className="px-6 py-5 border-b border-gray-50 bg-white sticky top-0 z-10">
-                                    <DialogTitle className="text-xl font-bold text-gray-900 flex items-center gap-2.5">
-                                        <div className="w-10 h-10 bg-teal-50 rounded-lg flex items-center justify-center">
-                                            <CheckCircle className="w-6 h-6 text-teal-600" />
+                                <DialogHeader className="px-6 py-5 border-b border-gray-100 bg-gray-50">
+                                    <DialogTitle className="text-lg font-bold text-gray-900 flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+                                            <CheckCircle className="w-5 h-5 text-teal-600" />
                                         </div>
                                         Confirm Appointment
                                     </DialogTitle>
@@ -351,151 +566,109 @@ const BookAppointment: React.FC = () => {
                                     <form onSubmit={form.handleSubmit(() => {
                                         handleBook();
                                     })} className="p-6 space-y-5">
-                                        <div className="space-y-4">
-                                            {/* Patient Info */}
-                                            <motion.div
-                                                initial={{ opacity: 0, x: -10 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: 0.1 }}
-                                                className="space-y-2"
-                                            >
-                                                <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-0.5">Patient Details</FormLabel>
-                                                <div className="flex items-center gap-4 p-3 bg-gray-50/50 rounded-lg border border-gray-100 transition-colors hover:bg-gray-50">
-                                                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-100">
-                                                        <User className="w-5 h-5 text-gray-400" />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-bold text-gray-900 text-[15px] truncate">{selectedPatient?.name}</p>
-                                                        <p className="text-[11px] text-gray-500 font-semibold tracking-wide uppercase">{selectedPatient?.patientId}</p>
-                                                    </div>
+                                        {/* Summary */}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                                <div className="w-9 h-9 bg-teal-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
+                                                    {selectedPatient?.name[0].toUpperCase()}
                                                 </div>
-                                            </motion.div>
-
-                                            {/* Doctor Info */}
-                                            <motion.div
-                                                initial={{ opacity: 0, x: -10 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: 0.2 }}
-                                                className="space-y-2"
-                                            >
-                                                <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-0.5">Consultant Doctor</FormLabel>
-                                                <div className="flex items-center gap-4 p-3 bg-gray-50/50 rounded-lg border border-gray-100 transition-colors hover:bg-gray-50">
-                                                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-100">
-                                                        <Stethoscope className="w-5 h-5 text-teal-600" />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-bold text-gray-900 text-[15px] truncate">{formatDoctorName(selectedDoctor?.name)}</p>
-                                                        <p className="text-[11px] text-teal-600 font-bold uppercase tracking-wide">{selectedDoctor?.specialization}</p>
-                                                    </div>
+                                                <div className="flex-1">
+                                                    <p className="text-xs text-gray-400 font-medium">Patient</p>
+                                                    <p className="font-semibold text-gray-900 text-sm">{selectedPatient?.name}</p>
                                                 </div>
-                                            </motion.div>
-
-                                            <div className="grid grid-cols-2 gap-4">
-                                                {/* Date */}
-                                                <motion.div
-                                                    initial={{ opacity: 0, scale: 0.95 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    transition={{ delay: 0.3 }}
-                                                    className="space-y-2"
-                                                >
-                                                    <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-0.5">Date</FormLabel>
-                                                    <div className="flex items-center gap-3 py-2 px-3 bg-gray-50/50 rounded-lg border border-gray-100 transition-colors hover:bg-gray-50">
-                                                        <Calendar className="w-4 h-4 text-gray-400" />
-                                                        <p className="font-bold text-gray-900 text-base">
-                                                            {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                                                        </p>
-                                                    </div>
-                                                </motion.div>
-
-                                                {/* Fee */}
-                                                <motion.div
-                                                    initial={{ opacity: 0, scale: 0.95 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    transition={{ delay: 0.3 }}
-                                                    className="space-y-2"
-                                                >
-                                                    <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-0.5">Fee</FormLabel>
-                                                    <div className="flex items-center justify-between py-2 px-3 bg-teal-50/50 rounded-lg border border-teal-100/50 transition-colors hover:bg-teal-50">
-                                                        <span className="text-base font-bold text-teal-900">₹{selectedDoctor?.checkupFee || 0}</span>
-                                                        <Info className="w-4 h-4 text-teal-600/50" />
-                                                    </div>
-                                                </motion.div>
                                             </div>
 
-                                            {/* Payment Method */}
-                                            <FormField
-                                                control={form.control}
-                                                name="paymentType"
-                                                render={({ field }) => (
-                                                    <FormItem className="space-y-2.5">
-                                                        <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-0.5">
-                                                            Choose Payment Method <span className="text-red-500">*</span>
-                                                        </FormLabel>
-                                                        <FormControl>
-                                                            <div className="grid grid-cols-2 gap-2.5">
-                                                                <motion.button
-                                                                    whileHover={{ scale: 1.02 }}
-                                                                    whileTap={{ scale: 0.98 }}
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        field.onChange("CASH");
-                                                                        setPaymentType("CASH");
-                                                                    }}
-                                                                    className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border-2 transition-all duration-300 ${field.value === 'CASH'
-                                                                        ? 'border-teal-600 bg-teal-50 text-teal-700 shadow-md shadow-teal-600/10'
-                                                                        : 'border-gray-100 bg-white text-gray-500 hover:border-gray-200 hover:bg-gray-50'
-                                                                        }`}
-                                                                >
-                                                                    <Hash className="w-3.5 h-3.5" />
-                                                                    <span className="text-[11px] font-bold uppercase tracking-wider">Cash</span>
-                                                                </motion.button>
-                                                                <motion.button
-                                                                    whileHover={{ scale: 1.02 }}
-                                                                    whileTap={{ scale: 0.98 }}
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        field.onChange("ONLINE");
-                                                                        setPaymentType("ONLINE");
-                                                                    }}
-                                                                    className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border-2 transition-all duration-300 ${field.value === 'ONLINE'
-                                                                        ? 'border-teal-600 bg-teal-50 text-teal-700 shadow-md shadow-teal-600/10'
-                                                                        : 'border-gray-100 bg-white text-gray-500 hover:border-gray-200 hover:bg-gray-50'
-                                                                        }`}
-                                                                >
-                                                                    <Zap className="w-3.5 h-3.5" />
-                                                                    <span className="text-[11px] font-bold uppercase tracking-wider">Online</span>
-                                                                </motion.button>
-                                                            </div>
-                                                        </FormControl>
-                                                        <FormMessage className="text-[10px] uppercase font-bold tracking-wider" />
-                                                    </FormItem>
-                                                )}
-                                            />
+                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                                <div className="w-9 h-9 bg-teal-600 rounded-lg flex items-center justify-center text-white font-semibold text-xs">
+                                                    Dr
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-xs text-gray-400 font-medium">Doctor</p>
+                                                    <p className="font-semibold text-gray-900 text-sm">{formatDoctorName(selectedDoctor?.name)}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                                    <p className="text-xs text-gray-400 font-medium">Date</p>
+                                                    <p className="font-semibold text-gray-900 text-sm mt-0.5">
+                                                        {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    </p>
+                                                </div>
+                                                <div className="p-3 bg-teal-50 rounded-lg border border-teal-100">
+                                                    <p className="text-xs text-teal-600 font-medium">Fee</p>
+                                                    <p className="font-bold text-teal-700 text-lg">₹{selectedDoctor?.checkupFee || 0}</p>
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        <DialogFooter className="pt-2 flex gap-3 sticky bottom-0 bg-white">
+                                        {/* Payment Method */}
+                                        <FormField
+                                            control={form.control}
+                                            name="paymentType"
+                                            render={({ field }) => (
+                                                <FormItem className="space-y-2">
+                                                    <FormLabel className="text-sm font-semibold text-gray-700">
+                                                        Payment Method <span className="text-red-500">*</span>
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    field.onChange("CASH");
+                                                                    setPaymentType("CASH");
+                                                                }}
+                                                                className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 transition-all ${field.value === 'CASH'
+                                                                    ? 'border-teal-600 bg-teal-50 text-teal-700'
+                                                                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                                                    }`}
+                                                            >
+                                                                <Hash className="w-4 h-4" />
+                                                                <span className="font-semibold text-sm">Cash</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    field.onChange("ONLINE");
+                                                                    setPaymentType("ONLINE");
+                                                                }}
+                                                                className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 transition-all ${field.value === 'ONLINE'
+                                                                    ? 'border-teal-600 bg-teal-50 text-teal-700'
+                                                                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                                                    }`}
+                                                            >
+                                                                <Zap className="w-4 h-4" />
+                                                                <span className="font-semibold text-sm">Online</span>
+                                                            </button>
+                                                        </div>
+                                                    </FormControl>
+                                                    <FormMessage className="text-xs text-red-500" />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <DialogFooter className="pt-2 flex gap-3">
                                             <Button
                                                 type="button"
                                                 variant="outline"
                                                 onClick={() => setIsConfirmModalOpen(false)}
-                                                className="flex-1 h-12 rounded-lg border-gray-200 font-bold uppercase tracking-widest text-[11px] hover:bg-gray-50 transition-all"
+                                                className="flex-1 h-11 rounded-lg border-gray-200 font-semibold text-sm"
                                             >
                                                 Cancel
                                             </Button>
                                             <Button
                                                 type="submit"
                                                 disabled={isBooking || !form.formState.isValid}
-                                                className="flex-1 h-12 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold uppercase tracking-widest text-[11px] shadow-lg shadow-teal-600/20 transition-all disabled:opacity-50 disabled:shadow-none"
+                                                className="flex-1 h-11 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm shadow-sm disabled:opacity-50"
                                             >
                                                 {isBooking ? (
                                                     <div className="flex items-center gap-2">
-                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                        <Loader size="sm" />
                                                         <span>Booking...</span>
                                                     </div>
                                                 ) : (
-                                                    <div className="flex items-center gap-2">
-                                                        <span>Confirm Booking</span>
-                                                    </div>
+                                                    'Confirm Booking'
                                                 )}
                                             </Button>
                                         </DialogFooter>
@@ -514,39 +687,27 @@ const BookAppointment: React.FC = () => {
                                     initial={{ scale: 0 }}
                                     animate={{ scale: 1 }}
                                     transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                                    className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center mx-auto mb-6 shadow-sm border border-emerald-100"
+                                    className="w-16 h-16 bg-emerald-100 rounded-lg flex items-center justify-center mx-auto mb-5"
                                 >
-                                    <CheckCircle className="w-10 h-10" />
+                                    <CheckCircle className="w-8 h-8 text-emerald-600" />
                                 </motion.div>
-                                <motion.h2
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.3 }}
-                                    className="text-2xl font-bold text-gray-900 mb-2"
-                                >
-                                    Booking Successful!
-                                </motion.h2>
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ delay: 0.4 }}
-                                    className="inline-flex items-center px-4 py-1.5 bg-teal-50 rounded-full mb-8 border border-teal-100"
-                                >
-                                    <span className="text-teal-600 text-sm font-bold tracking-wider uppercase">Token: #{bookingDetails?.tokenNumber || '---'}</span>
-                                </motion.div>
+                                <h2 className="text-xl font-bold text-gray-900 mb-2">Booking Successful!</h2>
+                                <div className="inline-flex items-center px-4 py-2 bg-teal-50 rounded-lg border border-teal-100 mb-6">
+                                    <span className="text-teal-700 font-bold">Token: #{bookingDetails?.tokenNumber || '---'}</span>
+                                </div>
 
-                                <div className="bg-gray-50/50 rounded-lg p-5 mb-8 border border-gray-100 space-y-3 text-left">
+                                <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-100 space-y-3 text-left">
                                     <div className="flex justify-between items-center text-sm">
-                                        <span className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">Patient</span>
-                                        <span className="font-bold text-gray-900">{selectedPatient?.name}</span>
+                                        <span className="text-gray-500">Patient</span>
+                                        <span className="font-semibold text-gray-900">{selectedPatient?.name}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm">
-                                        <span className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">Doctor</span>
-                                        <span className="font-bold text-gray-900">{formatDoctorName(selectedDoctor?.name)}</span>
+                                        <span className="text-gray-500">Doctor</span>
+                                        <span className="font-semibold text-gray-900">{formatDoctorName(selectedDoctor?.name)}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm">
-                                        <span className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">Date & Fee</span>
-                                        <span className="font-bold text-teal-700">
+                                        <span className="text-gray-500">Date & Fee</span>
+                                        <span className="font-semibold text-teal-700">
                                             {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} • ₹{selectedDoctor?.checkupFee}
                                         </span>
                                     </div>
@@ -556,7 +717,7 @@ const BookAppointment: React.FC = () => {
                                     <Button
                                         variant="outline"
                                         onClick={() => navigate('/receptionist/appointments')}
-                                        className="h-12 rounded-lg border-gray-200 font-bold uppercase tracking-widest text-[11px] hover:bg-gray-50 transition-all"
+                                        className="h-11 rounded-lg border-gray-200 font-semibold text-sm"
                                     >
                                         View List
                                     </Button>
@@ -569,7 +730,7 @@ const BookAppointment: React.FC = () => {
                                             setBookingDetails(null);
                                             setIsConfirmModalOpen(false);
                                         }}
-                                        className="h-12 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold uppercase tracking-widest text-[11px] shadow-lg shadow-teal-600/20 transition-all"
+                                        className="h-11 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm shadow-sm"
                                     >
                                         Book Another
                                     </Button>

@@ -9,5 +9,10 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: ['react', 'react-dom'],
+  },
+  optimizeDeps: {
+    exclude: ['@mantine/core', '@mantine/hooks'],
+    include: ['react', 'react-dom'],
   },
 })

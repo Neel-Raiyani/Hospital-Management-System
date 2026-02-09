@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Calendar, UserPlus, Clock, Loader2, RefreshCw } from 'lucide-react';
+import { Users, Calendar, UserPlus, Clock, RefreshCw } from 'lucide-react';
+import { Loader } from '../../components/ui/Loader';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/Dialog';
 import { Toast, useToast } from '../../components/ui/Toast';
 import { appointmentService } from '../../api/appointment.service';
@@ -205,7 +206,7 @@ const ReceptionistDashboard: React.FC = () => {
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                             {loading ? (
-                                <Loader2 className="w-6 h-6 text-white animate-spin" />
+                                <Loader size="sm" variant="teal" />
                             ) : (
                                 <RefreshCw className="w-6 h-6 text-white" />
                             )}

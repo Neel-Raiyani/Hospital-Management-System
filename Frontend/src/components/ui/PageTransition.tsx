@@ -1,21 +1,12 @@
 import { Suspense, lazy } from 'react';
 import type { ComponentType } from 'react';
+import { Loader } from './Loader';
 
 // Universal Page Loader Component
 export function PageLoader() {
     return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] animate-in fade-in duration-300">
-            <div className="relative">
-                {/* Outer ring */}
-                <div className="w-12 h-12 rounded-full border-2 border-teal-100" />
-                {/* Spinning ring */}
-                <div className="absolute inset-0 w-12 h-12 rounded-full border-2 border-transparent border-t-teal-600 animate-spin" />
-                {/* Center dot */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-2 h-2 bg-teal-600 rounded-full animate-pulse" />
-                </div>
-            </div>
-            <p className="mt-4 text-sm font-medium text-gray-400">Loading...</p>
+            <Loader size="md" text="Loading..." />
         </div>
     );
 }

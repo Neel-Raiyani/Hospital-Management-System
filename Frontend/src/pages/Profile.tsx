@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    Shield, Clock, Loader2, Lock,
+    Shield, Clock, Lock,
     KeyRound, Eye, EyeOff, CheckCircle,
     User as UserIcon, AlertCircle, ArrowLeft
 } from 'lucide-react';
+import { Loader } from '../components/ui/Loader';
 import {
     Dialog, DialogContent, DialogHeader,
     DialogTitle, DialogDescription, DialogTrigger
@@ -98,8 +99,11 @@ const Profile: React.FC = () => {
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh]">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
-                <p className="text-gray-500 font-medium text-sm">Loading security context...</p>
+                <Loader
+                    size="md"
+                    variant={currentUser?.role === 'RECEPTIONIST' ? 'teal' : 'blue'}
+                    text="Loading security context..."
+                />
             </div>
         );
     }
@@ -119,13 +123,17 @@ const Profile: React.FC = () => {
         );
     }
 
+    const isReceptionist = userData.role === 'RECEPTIONIST';
+    const isDoctor = userData.role === 'DOCTOR';
+    const isAdmin = userData.role === 'ADMIN';
+
     const initials = userData.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
 
     const getRoleColor = (role: string) => {
         switch (role) {
-            case 'ADMIN': return 'bg-[#DDE6ED] text-[#27374D] border-[#B9D7EA]';
+            case 'ADMIN': return 'bg-[#1e293b] text-white border-[#B9D7EA] shadow-sm';
             case 'DOCTOR': return 'bg-[#F7FBFC] text-[#769FCD] border-[#B9D7EA]';
-            case 'RECEPTIONIST': return 'bg-[#F0F9FF] text-[#0EA5E9] border-[#B9D7EA]';
+            case 'RECEPTIONIST': return 'bg-teal-50 text-teal-700 border-teal-100 shadow-sm shadow-teal-600/5';
             case 'LAB': return 'bg-[#EEF2FF] text-[#818CF8] border-[#B9D7EA]';
             default: return 'bg-[#F7FBFC] text-[#64748B] border-[#B9D7EA]';
         }
@@ -139,7 +147,8 @@ const Profile: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     onClick={() => navigate(-1)}
-                    className="group flex items-center gap-2 text-[#64748B] hover:text-[#27374D] hover:bg-[#D6E6F2] rounded-xl px-4 py-2 transition-all"
+                    className={`group flex items-center gap-2 rounded-xl px-4 py-2 transition-all ${isReceptionist ? 'text-teal-600 hover:text-teal-700 hover:bg-teal-50' : 'text-[#64748B] hover:text-[#27374D] hover:bg-[#D6E6F2]'
+                        }`}
                 >
                     <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
                     <span className="font-bold text-xs uppercase tracking-widest">Go Back</span>
@@ -147,32 +156,33 @@ const Profile: React.FC = () => {
             </div>
 
             {/* Minimal Header */}
-            <header className="bg-white border border-[#B9D7EA] rounded-xl p-6 shadow-sm flex items-center gap-6">
+            <header className={`bg-white border rounded-2xl p-6 shadow-sm flex items-center gap-6 ${isReceptionist ? 'border-teal-100/50 shadow-teal-600/5' : 'border-[#B9D7EA]'
+                }`}>
                 <div
-                    className="w-16 h-16 rounded-xl flex items-center justify-center text-xl font-bold text-white shadow-md shrink-0"
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-bold text-white shadow-md shrink-0"
                     style={{
-                        backgroundColor: userData.role === 'ADMIN' ? '#27374D' :
-                            userData.role === 'DOCTOR' ? '#769FCD' :
-                                userData.role === 'RECEPTIONIST' ? '#0EA5E9' : '#818CF8'
+                        backgroundColor: isAdmin ? '#1e293b' :
+                            isDoctor ? '#769FCD' :
+                                isReceptionist ? '#0d9488' : '#818CF8'
                     }}
                 >
                     {initials}
                 </div>
                 <div className="grow">
                     <div className="flex items-center gap-3 mb-1">
-                        <h1 className="text-3xl font-bold text-[#111827] tracking-tight">
-                            {userData.role === 'DOCTOR' ? formatDoctorName(userData.name) : userData.name}
+                        <h1 className="text-3xl font-extrabold text-[#111827] tracking-tight">
+                            {isDoctor ? formatDoctorName(userData.name) : userData.name}
                         </h1>
-                        <Badge className={`${getRoleColor(userData.role)} border-none px-2.5 py-0.5 font-bold text-[10px] tracking-wider rounded-lg`}>
+                        <Badge className={`${getRoleColor(userData.role)} px-2.5 py-1 font-extrabold text-[10px] tracking-wider rounded-lg border-none`}>
                             {userData.role}
                         </Badge>
                     </div>
                     <div className="flex items-center gap-6 text-xs text-[#64748B]">
-                        <span className="flex items-center gap-1.5 font-semibold">
-                            <div className="w-2 h-2 rounded-full bg-[#10B981]" /> Active Status
+                        <span className="flex items-center gap-1.5 font-bold">
+                            <div className={`w-2 h-2 rounded-full ${isReceptionist ? 'bg-teal-500' : 'bg-[#10B981]'}`} /> Active Status
                         </span>
-                        <span className="flex items-center gap-1.5 font-medium">
-                            <Clock size={14} className="text-[#94A3B8]" />
+                        <span className="flex items-center gap-1.5 font-bold">
+                            <Clock size={14} className={isReceptionist ? 'text-teal-400' : 'text-[#94A3B8]'} />
                             Joined: <span className="text-[#1E293B]">{new Date(userData.createdAt).toLocaleDateString()}</span>
                         </span>
                     </div>
@@ -181,19 +191,23 @@ const Profile: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                 {/* Unified Information Section */}
-                <Card className={`border-[#B9D7EA] shadow-sm rounded-xl bg-white flex flex-col ${isOwnProfile ? 'md:col-span-8' : 'md:col-span-12'}`}>
-                    <div className="p-4 bg-[#F7FBFC] border-b border-[#B9D7EA] flex items-center gap-2">
-                        <UserIcon size={16} className="text-[#769FCD]" />
-                        <h2 className="font-bold text-sm text-[#1E293B]">Profile Information</h2>
+                <Card className={`shadow-sm rounded-2xl bg-white flex flex-col ${isOwnProfile ? 'md:col-span-8' : 'md:col-span-12'} ${isReceptionist ? 'border-teal-100' : 'border-[#B9D7EA]'
+                    }`}>
+                    <div className={`p-4 border-b flex items-center gap-2 rounded-t-2xl ${isReceptionist ? 'bg-teal-50/50 border-teal-100' : 'bg-[#F7FBFC] border-[#B9D7EA]'
+                        }`}>
+                        <UserIcon size={16} className={isReceptionist ? 'text-teal-600' : 'text-[#769FCD]'} />
+                        <h2 className="font-extrabold text-sm text-[#1E293B]">Profile Information</h2>
                     </div>
                     <CardContent className="p-0 flex-1 overflow-hidden">
                         {userData && (
                             <Tabs defaultValue="personal" className="w-full h-full flex flex-col">
-                                <div className="px-6 pt-4 bg-[#F7FBFC]/50 border-b border-[#D6E6F2]">
+                                <div className={`px-6 pt-4 border-b ${isReceptionist ? 'bg-teal-50/20 border-teal-50' : 'bg-[#F7FBFC]/50 border-[#D6E6F2]'
+                                    }`}>
                                     <TabsList className="gap-2 bg-transparent p-0 h-auto justify-start border-none">
                                         <TabsTrigger
                                             value="personal"
-                                            className="data-[state=active]:bg-white data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-[#B9D7EA] px-4 py-2 rounded-t-lg text-xs font-bold transition-all"
+                                            className={`data-[state=active]:bg-white data-[state=active]:shadow-sm border border-transparent px-4 py-2 rounded-t-xl text-xs font-extrabold transition-all ${isReceptionist ? 'data-[state=active]:border-teal-100 data-[state=active]:text-teal-600' : 'data-[state=active]:border-[#B9D7EA]'
+                                                }`}
                                         >
                                             <UserIcon size={14} className="mr-2 opacity-70" />
                                             Personal Details
@@ -201,7 +215,8 @@ const Profile: React.FC = () => {
                                         {(userData.role !== 'ADMIN' && (userData.specialization || userData.experienceYears || userData.opdStartTime || userData.shift)) && (
                                             <TabsTrigger
                                                 value="professional"
-                                                className="data-[state=active]:bg-white data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-[#B9D7EA] px-4 py-2 rounded-t-lg text-xs font-bold transition-all"
+                                                className={`data-[state=active]:bg-white data-[state=active]:shadow-sm border border-transparent px-4 py-2 rounded-t-xl text-xs font-extrabold transition-all ${isReceptionist ? 'data-[state=active]:border-teal-100 data-[state=active]:text-teal-600' : 'data-[state=active]:border-[#B9D7EA]'
+                                                    }`}
                                             >
                                                 <Shield size={14} className="mr-2 opacity-70" />
                                                 Professional Info
@@ -214,25 +229,29 @@ const Profile: React.FC = () => {
                                     <TabsContent value="personal" className="m-0 focus-visible:ring-0">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                             <div className="space-y-4">
-                                                <div className="space-y-1">
-                                                    <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Email Address</label>
-                                                    <div className="text-sm font-medium text-[#1E293B] break-all p-3 bg-[#F7FBFC] rounded-xl border border-[#F1F5F9] shadow-inner">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-extrabold text-[#64748B] uppercase tracking-wider">Email Address</label>
+                                                    <div className={`text-sm font-bold break-all p-3 rounded-xl border shadow-sm ${isReceptionist ? 'bg-gray-50 border-teal-50/50 text-teal-900' : 'bg-[#F7FBFC] border-[#F1F5F9] text-[#1E293B]'
+                                                        }`}>
                                                         {userData.email}
                                                     </div>
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Phone Number</label>
-                                                    <div className="text-sm font-medium text-[#1E293B] p-3 bg-[#F7FBFC] rounded-xl border border-[#F1F5F9] shadow-inner">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-extrabold text-[#64748B] uppercase tracking-wider">Phone Number</label>
+                                                    <div className={`text-sm font-bold p-3 rounded-xl border shadow-sm ${isReceptionist ? 'bg-gray-50 border-teal-50/50 text-teal-900' : 'bg-[#F7FBFC] border-[#F1F5F9] text-[#1E293B]'
+                                                        }`}>
                                                         {userData.phone || 'Not provided'}
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="flex flex-col items-center justify-center border-l border-dashed border-[#B9D7EA] pl-8">
-                                                <div className="w-16 h-16 bg-[#F1F5F9] rounded-full flex items-center justify-center text-[#64748B] mb-3">
-                                                    <UserIcon size={32} opacity={0.3} />
+                                            <div className={`flex flex-col items-center justify-center border-l border-dashed pl-8 ${isReceptionist ? 'border-teal-100/50' : 'border-[#B9D7EA]'
+                                                }`}>
+                                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 ${isReceptionist ? 'bg-teal-50 text-teal-600' : 'bg-[#F1F5F9] text-[#64748B]'
+                                                    }`}>
+                                                    <UserIcon size={28} opacity={0.3} />
                                                 </div>
-                                                <p className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-widest">Registered Account</p>
-                                                <p className="text-[11px] text-[#64748B] mt-1 italic">Personal contact details of the staff member.</p>
+                                                <p className={`text-[10px] font-extrabold uppercase tracking-widest ${isReceptionist ? 'text-teal-600/70' : 'text-[#94A3B8]'}`}>Registered Account</p>
+                                                <p className="text-[11px] text-[#64748B] mt-1 italic text-center">Personal contact details of the staff member.</p>
                                             </div>
                                         </div>
                                     </TabsContent>
@@ -258,21 +277,24 @@ const Profile: React.FC = () => {
                                                         </div>
                                                     </div>
                                                 </div>
-                                            ) : (userData.role === 'RECEPTIONIST' || userData.role === 'LAB') ? (
+                                            ) : (isReceptionist || userData.role === 'LAB') ? (
                                                 <div className="space-y-4">
-                                                    <div className="flex justify-between items-center p-3 bg-[#F7FBFC] rounded-xl border border-[#F1F5F9]">
-                                                        <span className="text-xs text-[#64748B] font-bold uppercase tracking-wide">Assigned Shift</span>
-                                                        <Badge className="bg-[#10B981] text-white hover:bg-[#10B981] shadow-sm">
+                                                    <div className={`flex justify-between items-center p-3 rounded-xl border ${isReceptionist ? 'bg-gray-50 border-teal-50/50' : 'bg-[#F7FBFC] border-[#F1F5F9]'
+                                                        }`}>
+                                                        <span className={`text-xs font-extrabold uppercase tracking-wide ${isReceptionist ? 'text-teal-700' : 'text-[#64748B]'}`}>Assigned Shift</span>
+                                                        <Badge className={`${isReceptionist ? 'bg-teal-600 hover:bg-teal-700 shadow-teal-600/10' : 'bg-[#10B981]'} text-white shadow-sm border-none`}>
                                                             {userData.shift || 'General'}
                                                         </Badge>
                                                     </div>
-                                                    <div className="p-4 bg-[#ECFDF5] rounded-2xl border border-[#D1FAE5] flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#10B981] shadow-sm">
+                                                    <div className={`p-4 rounded-2xl border flex items-center gap-4 ${isReceptionist ? 'bg-teal-50/30 border-teal-100/50' : 'bg-[#ECFDF5] border-[#D1FAE5]'
+                                                        }`}>
+                                                        <div className={`w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm ${isReceptionist ? 'text-teal-600 border border-teal-50' : 'text-[#10B981]'
+                                                            }`}>
                                                             <Clock size={20} />
                                                         </div>
                                                         <div>
-                                                            <h4 className="text-[11px] font-bold text-[#065F46] uppercase tracking-wider">Department Posting</h4>
-                                                            <p className="text-xs font-medium text-[#047857]">
+                                                            <h4 className={`text-[11px] font-extrabold uppercase tracking-wider ${isReceptionist ? 'text-teal-800' : 'text-[#065F46]'}`}>Department Posting</h4>
+                                                            <p className={`text-xs font-bold ${isReceptionist ? 'text-teal-600/80' : 'text-[#047857]'}`}>
                                                                 Assigned to {userData.role === 'LAB' ? 'Diagnostic Unit' : 'Main Registration Desk'}
                                                             </p>
                                                         </div>
@@ -280,12 +302,14 @@ const Profile: React.FC = () => {
                                                 </div>
                                             ) : null}
 
-                                            <div className="flex flex-col items-center justify-center border-l border-dashed border-[#B9D7EA] pl-8">
-                                                <div className="w-16 h-16 bg-[#F1F5F9] rounded-full flex items-center justify-center text-[#64748B] mb-3">
-                                                    <Shield size={32} opacity={0.3} />
+                                            <div className={`flex flex-col items-center justify-center border-l border-dashed pl-8 ${isReceptionist ? 'border-teal-100/50' : 'border-[#B9D7EA]'
+                                                }`}>
+                                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 ${isReceptionist ? 'bg-teal-50 text-teal-600' : 'bg-[#F1F5F9] text-[#64748B]'
+                                                    }`}>
+                                                    <Shield size={28} opacity={0.3} />
                                                 </div>
-                                                <p className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-widest">Verified Role</p>
-                                                <p className="text-[11px] text-[#64748B] mt-1 text-center">Current professional credentials and active scheduling.</p>
+                                                <p className={`text-[10px] font-extrabold uppercase tracking-widest ${isReceptionist ? 'text-teal-600/70' : 'text-[#94A3B8]'}`}>Verified Role</p>
+                                                <p className="text-[11px] text-[#64748B] mt-1 text-center italic">Current professional credentials and active scheduling.</p>
                                             </div>
                                         </div>
                                     </TabsContent>
@@ -297,32 +321,36 @@ const Profile: React.FC = () => {
 
                 {/* Account Security - Only visible to owner */}
                 {isOwnProfile && (
-                    <Card className="md:col-span-4 border-[#B9D7EA] shadow-sm rounded-xl bg-white flex flex-col">
-                        <div className="p-4 bg-[#F7FBFC] border-b border-[#B9D7EA] flex items-center gap-2">
-                            <Shield size={16} className="text-[#769FCD]" />
-                            <h2 className="font-bold text-sm text-[#1E293B]">Security</h2>
+                    <Card className={`md:col-span-4 shadow-sm rounded-2xl bg-white flex flex-col ${isReceptionist ? 'border-teal-100' : 'border-[#B9D7EA]'
+                        }`}>
+                        <div className={`p-4 border-b flex items-center gap-2 rounded-t-2xl ${isReceptionist ? 'bg-teal-50/50 border-teal-100' : 'bg-[#F7FBFC] border-[#B9D7EA]'
+                            }`}>
+                            <Shield size={16} className={isReceptionist ? 'text-teal-600' : 'text-[#769FCD]'} />
+                            <h2 className="font-extrabold text-sm text-[#1E293B]">Security</h2>
                         </div>
                         <CardContent className="p-6 flex flex-col items-center justify-center flex-1 text-center space-y-4">
-                            <div className="w-12 h-12 bg-[#D6E6F2] rounded-2xl flex items-center justify-center text-[#769FCD] shadow-sm">
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${isReceptionist ? 'bg-teal-50 text-teal-600' : 'bg-[#D6E6F2] text-[#769FCD]'
+                                }`}>
                                 <KeyRound size={24} />
                             </div>
                             <div className="space-y-1">
-                                <h3 className="font-bold text-xs text-[#1E293B]">Password Manager</h3>
-                                <p className="text-[10px] text-[#64748B] leading-relaxed">
-                                    Update your password to keep your account secure.
+                                <h3 className="font-extrabold text-xs text-[#1E293B]">Password Manager</h3>
+                                <p className="text-[10px] font-medium text-[#64748B] leading-relaxed">
+                                    Update your password regularly.
                                 </p>
                             </div>
 
                             <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
                                 <DialogTrigger asChild>
-                                    <Button className="w-full bg-[#769FCD] hover:bg-[#2563EB] text-white font-bold h-10 rounded-xl shadow-md transition-all active:scale-[0.98] text-xs">
+                                    <Button className={`w-full text-white font-extrabold h-10 rounded-xl shadow-md transition-all active:scale-[0.98] text-xs border-none ${isReceptionist ? 'bg-teal-600 hover:bg-teal-700 shadow-teal-600/20' : 'bg-[#769FCD] hover:bg-[#2563EB]'
+                                        }`}>
                                         Update Password
                                     </Button>
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-[425px] rounded-2xl border-none shadow-2xl p-0 overflow-hidden">
-                                    <div className="bg-[#F7FBFC] p-6 border-b border-[#B9D7EA]">
+                                    <div className={`p-6 border-b ${isReceptionist ? 'bg-teal-50 border-teal-100' : 'bg-[#F7FBFC] border-[#B9D7EA]'}`}>
                                         <DialogHeader>
-                                            <DialogTitle className="text-xl font-bold text-[#1E293B]">Update Password</DialogTitle>
+                                            <DialogTitle className={`text-xl font-bold ${isReceptionist ? 'text-teal-900' : 'text-[#1E293B]'}`}>Update Password</DialogTitle>
                                             <DialogDescription className="text-xs font-medium text-[#64748B]">
                                                 Choose a secure password to protect your account access.
                                             </DialogDescription>
@@ -336,17 +364,17 @@ const Profile: React.FC = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => setShowPasswords(!showPasswords)}
-                                                        className="text-[#769FCD] text-[10px] font-bold flex items-center gap-1 px-2 py-1 hover:bg-[#D6E6F2] rounded-md transition-colors"
+                                                        className={`${isReceptionist ? 'text-teal-600 hover:bg-teal-50' : 'text-[#769FCD] hover:bg-[#D6E6F2]'} text-[10px] font-bold flex items-center gap-1 px-2 py-1 rounded-md transition-colors`}
                                                     >
                                                         {showPasswords ? <EyeOff size={12} /> : <Eye size={12} />}
                                                         {showPasswords ? 'Hide' : 'Show'}
                                                     </button>
                                                 </div>
                                                 <div className="relative">
-                                                    <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+                                                    <Lock size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isReceptionist ? 'text-teal-400' : 'text-[#94A3B8]'}`} />
                                                     <Input
                                                         type={showPasswords ? 'text' : 'password'}
-                                                        className="pl-10 h-12 text-sm font-mono bg-[#F7FBFC] border-[#B9D7EA] rounded-xl focus:ring-4 focus:ring-[#769FCD]/10"
+                                                        className={`pl-10 h-12 text-sm font-mono rounded-xl focus:ring-4 ${isReceptionist ? 'bg-gray-50 border-teal-100 focus:ring-teal-500/10' : 'bg-[#F7FBFC] border-[#B9D7EA] focus:ring-[#769FCD]/10'}`}
                                                         placeholder="Enter current password"
                                                         value={passwordData.currentPassword}
                                                         onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
@@ -359,10 +387,10 @@ const Profile: React.FC = () => {
                                                 <div className="space-y-2">
                                                     <label className="text-[11px] font-bold text-[#475569] uppercase tracking-wider">New Password</label>
                                                     <div className="relative">
-                                                        <KeyRound size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+                                                        <KeyRound size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isReceptionist ? 'text-teal-400' : 'text-[#94A3B8]'}`} />
                                                         <Input
                                                             type={showPasswords ? 'text' : 'password'}
-                                                            className="pl-10 h-12 text-sm font-mono bg-[#F7FBFC] border-[#B9D7EA] rounded-xl focus:ring-4 focus:ring-[#769FCD]/10"
+                                                            className={`pl-10 h-12 text-sm font-mono rounded-xl focus:ring-4 ${isReceptionist ? 'bg-gray-50 border-teal-100 focus:ring-teal-500/10' : 'bg-[#F7FBFC] border-[#B9D7EA] focus:ring-[#769FCD]/10'}`}
                                                             placeholder="••••••••"
                                                             value={passwordData.newPassword}
                                                             onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
@@ -373,10 +401,10 @@ const Profile: React.FC = () => {
                                                 <div className="space-y-2">
                                                     <label className="text-[11px] font-bold text-[#475569] uppercase tracking-wider">Confirm New Password</label>
                                                     <div className="relative">
-                                                        <CheckCircle size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+                                                        <CheckCircle size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isReceptionist ? 'text-teal-400' : 'text-[#94A3B8]'}`} />
                                                         <Input
                                                             type={showPasswords ? 'text' : 'password'}
-                                                            className="pl-10 h-12 text-sm font-mono bg-[#F7FBFC] border-[#B9D7EA] rounded-xl focus:ring-4 focus:ring-[#769FCD]/10"
+                                                            className={`pl-10 h-12 text-sm font-mono rounded-xl focus:ring-4 ${isReceptionist ? 'bg-gray-50 border-teal-100 focus:ring-teal-500/10' : 'bg-[#F7FBFC] border-[#B9D7EA] focus:ring-[#769FCD]/10'}`}
                                                             placeholder="••••••••"
                                                             value={passwordData.confirmPassword}
                                                             onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
@@ -395,11 +423,11 @@ const Profile: React.FC = () => {
                                             <Button
                                                 type="submit"
                                                 disabled={updatingPassword}
-                                                className="w-full bg-[#769FCD] hover:bg-[#2563EB] text-white font-black h-12 rounded-xl mt-2 shadow-lg shadow-[#769FCD]/20 uppercase tracking-widest text-xs"
+                                                className={`w-full text-white font-black h-12 rounded-xl mt-2 uppercase tracking-widest text-xs border-none shadow-lg transition-all active:scale-[0.98] ${isReceptionist ? 'bg-teal-600 hover:bg-teal-700 shadow-teal-600/20' : 'bg-[#769FCD] hover:bg-[#2563EB] shadow-[#769FCD]/20'}`}
                                             >
                                                 {updatingPassword ? (
                                                     <>
-                                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                        <Loader size="sm" variant={isReceptionist ? 'teal' : 'blue'} className="mr-2" />
                                                         Updating...
                                                     </>
                                                 ) : (

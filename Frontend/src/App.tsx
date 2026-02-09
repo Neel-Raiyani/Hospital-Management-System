@@ -19,6 +19,26 @@ import BookAppointment from './pages/receptionist/BookAppointment.tsx';
 import AppointmentList from './pages/common/AppointmentList.tsx';
 import PatientList from './pages/receptionist/PatientList.tsx';
 
+import { useAuth } from './context/AuthContext.tsx';
+import { Loader } from './components/ui/Loader.tsx';
+
+function ProfileRedirect() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-gray-50/50">
+        <Loader size="lg" text="Authenticating..." />
+      </div>
+    );
+  }
+
+  if (user?.role === 'ADMIN') return <Navigate to="/admin/profile" replace />;
+  if (user?.role === 'RECEPTIONIST') return <Navigate to="/receptionist/profile" replace />;
+
+  return <Profile />;
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -60,6 +80,7 @@ function App() {
             <Route path="appointments" element={<ReceptionistAppointments />} />
             <Route path="patients" element={<PatientList />} />
             <Route path="book-appointment" element={<BookAppointment />} />
+            <Route path="profile" element={<Profile />} />
             <Route path="book" element={<Navigate to="/receptionist/book-appointment" replace />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
@@ -74,7 +95,7 @@ function App() {
             }
           >
             <Route index element={<Navigate to="/login" replace />} />
-            <Route path="profile" element={<Profile />} />
+            <Route path="profile" element={<ProfileRedirect />} />
 
             {/* Shared Routes */}
             <Route

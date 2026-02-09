@@ -8,7 +8,8 @@ import { useAuth } from '../../hooks/useAuth';
 import StatusUpdateModal from '../../components/appointments/StatusUpdateModal';
 import CheckupForm from '../../components/appointments/CheckupForm';
 import PrescriptionForm from '../../components/appointments/PrescriptionForm';
-import { Pill, Stethoscope, RefreshCw, Loader2, ChevronRight, Search, Calendar } from 'lucide-react';
+import { Pill, Stethoscope, RefreshCw, ChevronRight, Search, Calendar } from 'lucide-react';
+import { Loader } from '../../components/ui/Loader';
 import { checkupService } from '../../api/checkup.service';
 import { prescriptionService } from '../../api/prescription.service';
 
@@ -110,7 +111,11 @@ const AppointmentList: React.FC = () => {
                         onClick={fetchAppointments}
                         className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-100"
                     >
-                        <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                        {loading ? (
+                            <Loader size="sm" variant={user?.role === 'RECEPTIONIST' ? 'teal' : 'blue'} />
+                        ) : (
+                            <RefreshCw className="w-5 h-5" />
+                        )}
                     </button>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -160,9 +165,12 @@ const AppointmentList: React.FC = () => {
                         <tbody className="divide-y divide-gray-50">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center">
-                                        <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-3" />
-                                        <p className="text-gray-500 text-sm">Loading appointments...</p>
+                                    <td colSpan={5} className="px-6 py-12 text-center text-center">
+                                        <Loader
+                                            size="md"
+                                            variant={user?.role === 'RECEPTIONIST' ? 'teal' : 'blue'}
+                                            text="Loading appointments..."
+                                        />
                                     </td>
                                 </tr>
                             ) : filteredAppointments.length === 0 ? (

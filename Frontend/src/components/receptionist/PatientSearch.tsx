@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Search, User, Phone, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Search, User, Phone, AlertCircle, CheckCircle } from 'lucide-react';
+import { Loader } from '../ui/Loader';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { patientService } from '../../api/patient.service';
@@ -57,7 +58,7 @@ const PatientSearch: React.FC<PatientSearchProps> = ({ onPatientSelect, onCreate
             {/* Search Header */}
             <div className="bg-teal-50 border border-teal-200 rounded-lg p-5">
                 <div className="flex items-start gap-3 mb-4">
-                    <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center shrink-0">
                         <Search className="w-5 h-5 text-white" />
                     </div>
                     <div>
@@ -109,7 +110,7 @@ const PatientSearch: React.FC<PatientSearchProps> = ({ onPatientSelect, onCreate
                             onChange={(e) => setSearchQuery(searchType === 'phone' ? e.target.value.replace(/\D/g, '').slice(0, 10) : e.target.value)}
                             onKeyPress={handleKeyPress}
                             placeholder={searchType === 'phone' ? 'Enter 10-digit phone number' : 'Enter patient ID'}
-                            className="h-11 border-gray-300"
+                            className="h-11 border-gray-300 placeholder:text-gray-400"
                             maxLength={searchType === 'phone' ? 10 : undefined}
                         />
                     </div>
@@ -119,7 +120,7 @@ const PatientSearch: React.FC<PatientSearchProps> = ({ onPatientSelect, onCreate
                         className="px-5 h-11 rounded-md font-medium bg-teal-600 hover:bg-teal-700 text-white"
                     >
                         {loading ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <Loader size="sm" />
                         ) : (
                             <>
                                 <Search className="w-4 h-4 mr-2" />
@@ -133,7 +134,7 @@ const PatientSearch: React.FC<PatientSearchProps> = ({ onPatientSelect, onCreate
             {/* Error Message */}
             {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                     <p className="text-sm font-medium text-red-900">{error}</p>
                 </div>
             )}
@@ -160,7 +161,7 @@ const PatientSearch: React.FC<PatientSearchProps> = ({ onPatientSelect, onCreate
                     ) : (
                         <>
                             <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 flex items-center gap-3">
-                                <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
+                                <CheckCircle className="w-5 h-5 text-teal-600 shrink-0" />
                                 <p className="text-sm font-medium text-teal-900">
                                     Found {searchResults.length} patient{searchResults.length > 1 ? 's' : ''}
                                 </p>

@@ -5,7 +5,8 @@ import { z } from 'zod';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import '../../styles/datepicker.css';
-import { User, Calendar, Phone, FileText, ChevronDown, Loader2 } from 'lucide-react';
+import { User, Calendar, Phone, FileText, ChevronDown, Clock, AlertCircle, Zap, AlertTriangle } from 'lucide-react';
+import { Loader } from '../ui/Loader';
 import { patientService } from '../../api/patient.service';
 import type { Gender } from '../../types/patient';
 import { toast } from 'react-hot-toast';
@@ -247,7 +248,7 @@ const PatientRegistrationForm: React.FC<PatientRegistrationFormProps> = ({ onSuc
                 >
                     {isSubmitting ? (
                         <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader size="sm" variant="teal" />
                             Processing...
                         </>
                     ) : (
