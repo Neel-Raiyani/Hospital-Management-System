@@ -8,8 +8,8 @@ import { appointmentService } from '../../api/appointment.service';
 import { prescriptionService } from '../../api/prescription.service';
 import { checkupService } from '../../api/checkup.service';
 import type { Appointment } from '../../types/appointment';
-import CheckupForm from '../../components/appointments/CheckupForm';
-import PrescriptionForm from '../../components/appointments/PrescriptionForm';
+import CheckupForm from '../../components/features/appointments/CheckupForm';
+import PrescriptionForm from '../../components/features/appointments/PrescriptionForm';
 
 const DoctorDashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -84,7 +84,7 @@ const DoctorDashboard: React.FC = () => {
     ];
 
     const AppointmentCard = ({ app, type }: { app: Appointment; type: 'WAITING' | 'LAB_TESTS' | 'REVIEW' }) => (
-        <div className="bg-white p-5 rounded-[2rem] border border-gray-100 hover:shadow-xl hover:shadow-gray-100/50 transition-all group relative overflow-hidden">
+        <div className="bg-white p-5 rounded-4xl border border-gray-100 hover:shadow-xl hover:shadow-gray-100/50 transition-all group relative overflow-hidden">
             <div className="flex items-center gap-4">
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl shadow-sm transition-all ${type === 'WAITING' ? 'bg-blue-50 text-blue-600' :
                     type === 'LAB_TESTS' ? 'bg-purple-50 text-purple-600' : 'bg-indigo-50 text-indigo-600'
@@ -168,7 +168,7 @@ const DoctorDashboard: React.FC = () => {
                     >
                         <RefreshCw className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} />
                     </button>
-                    <div className="bg-white px-6 py-3 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3">
+                    <div className="relative overflow-hidden rounded-4xl bg-white p-8 shadow-2xl shadow-blue-900/10 sm flex items-center gap-3">
                         <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
                         <span className="text-sm font-black text-gray-600 uppercase tracking-widest leading-none">On Duty</span>
                     </div>

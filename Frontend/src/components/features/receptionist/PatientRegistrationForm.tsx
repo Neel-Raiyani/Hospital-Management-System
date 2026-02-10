@@ -4,11 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import '../../styles/datepicker.css';
-import { User, Calendar, Phone, FileText, ChevronDown, Clock, AlertCircle, Zap, AlertTriangle } from 'lucide-react';
-import { Loader } from '../ui/Loader';
-import { patientService } from '../../api/patient.service';
-import type { Gender } from '../../types/patient';
+import '../../../styles/datepicker.css';
+import { User, Calendar, Phone, FileText, ChevronDown } from 'lucide-react';
+import { Loader } from '../../ui/Loader';
+import { patientService } from '../../../api/patient.service';
+import type { Gender } from '../../../types/patient';
 import { toast } from 'react-hot-toast';
 
 // Validation schema matching backend requirements
@@ -85,7 +85,7 @@ const PatientRegistrationForm: React.FC<PatientRegistrationFormProps> = ({ onSuc
     };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 font-['Inter',_sans-serif]">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 font-['Inter',sans-serif]">
             {/* Primary Info Row */}
             <div className="grid grid-cols-2 gap-4">
                 {/* Name Field */}

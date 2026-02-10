@@ -6,10 +6,10 @@ import { Toast, useToast } from '../../components/ui/Toast';
 import { appointmentService } from '../../api/appointment.service';
 import { patientService } from '../../api/patient.service';
 import { doctorService } from '../../api/doctor.service';
-import PatientSearch from '../../components/receptionist/PatientSearch';
-import PatientRegistrationForm from '../../components/receptionist/PatientRegistrationForm';
-import AppointmentBookingModal from '../../components/receptionist/AppointmentBookingModal';
-import DailyOPDQueue from '../../components/receptionist/DailyOPDQueue';
+import PatientSearch from '../../components/features/receptionist/PatientSearch';
+import PatientRegistrationForm from '../../components/features/receptionist/PatientRegistrationForm';
+import AppointmentBookingModal from '../../components/features/receptionist/AppointmentBookingModal';
+import DailyOPDQueue from '../../components/features/receptionist/DailyOPDQueue';
 import type { Appointment } from '../../types/appointment';
 import type { Patient } from '../../types/patient';
 

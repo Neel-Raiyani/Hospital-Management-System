@@ -9,7 +9,7 @@ import { patientService } from '../../api/patient.service';
 import { doctorService } from '../../api/doctor.service';
 import { formatDoctorName } from '../../utils/nameUtils';
 import type { LabTest } from '../../types/lab';
-import LabReportUpload from '../../components/lab/LabReportUpload';
+import LabReportUpload from '../../components/features/lab/LabReportUpload';
 
 const LabDashboard: React.FC = () => {
     const [groupedPendingTests, setGroupedPendingTests] = useState<{ [key: string]: { appointmentId: string, patient: any, doctor: any, tests: LabTest[], createdAt: string } }>({});
@@ -89,7 +89,7 @@ const LabDashboard: React.FC = () => {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {stats.map((stat, i) => (
-                    <div key={i} className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-gray-100/50 transition-all group overflow-hidden relative">
+                    <div key={i} className="bg-white p-6 rounded-4xl shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-gray-100/50 transition-all group overflow-hidden relative">
                         <div className={`absolute top-0 right-0 w-24 h-24 bg-${stat.color}-50 rounded-bl-[4rem] -mr-8 -mt-8 transition-transform group-hover:scale-110`} />
                         <div className="relative">
                             <div className={`w-12 h-12 bg-${stat.color}-50 text-${stat.color}-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-${stat.color}-600 group-hover:text-white transition-all`}>
@@ -184,7 +184,7 @@ const LabDashboard: React.FC = () => {
                 {/* Recent Activity / Quick Stats Side Panel */}
                 <div className="space-y-6">
                     <h2 className="text-xl font-black text-gray-900 tracking-tight px-2">Quick Actions</h2>
-                    <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-[2.5rem] text-white shadow-xl shadow-blue-100 relative overflow-hidden group">
+                    <div className="bg-linear-to-br from-blue-600 to-indigo-700 p-8 rounded-[2.5rem] text-white shadow-xl shadow-blue-100 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700" />
                         <h4 className="text-2xl font-black leading-tight relative">Ready for<br />Samples?</h4>
                         <p className="text-blue-100 font-bold text-sm mt-4 relative opacity-80">

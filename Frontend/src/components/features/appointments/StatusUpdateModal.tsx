@@ -3,9 +3,9 @@ import {
     X, CheckCircle, AlertCircle,
     ArrowRight, Loader2, Info
 } from 'lucide-react';
-import type { Appointment, AppointmentStatus } from '../../types/appointment';
-import { appointmentService } from '../../api/appointment.service';
-import { useAuth } from '../../hooks/useAuth';
+import type { Appointment, AppointmentStatus } from '../../../types/appointment';
+import { appointmentService } from '../../../api/appointment.service';
+import { useAuth } from '../../../hooks/useAuth';
 
 interface StatusUpdateModalProps {
     appointment: Appointment;

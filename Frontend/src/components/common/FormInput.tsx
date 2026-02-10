@@ -80,9 +80,6 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
                 success: 'hms-input-success',
             };
 
-            const paddingLeft = leftIcon ? 'padding-left: 40px;' : '';
-            const paddingRight = rightIcon ? 'padding-right: 40px;' : '';
-
             return `${baseClass} ${stateClasses[validationState]} ${className}`;
         };
 

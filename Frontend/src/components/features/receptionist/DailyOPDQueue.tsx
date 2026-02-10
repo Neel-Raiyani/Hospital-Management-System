@@ -1,8 +1,8 @@
 import React from 'react';
 import { Clock, User, Stethoscope, Activity, CheckCircle, XCircle } from 'lucide-react';
-import { Badge } from '../ui/Badge';
-import { formatDoctorName } from '../../utils/nameUtils';
-import type { Appointment, AppointmentStatus } from '../../types/appointment';
+import { Badge } from '../../ui/Badge';
+import { formatDoctorName } from '../../../utils/nameUtils';
+import type { Appointment, AppointmentStatus } from '../../../types/appointment';
 
 interface DailyOPDQueueProps {
     appointments: Appointment[];

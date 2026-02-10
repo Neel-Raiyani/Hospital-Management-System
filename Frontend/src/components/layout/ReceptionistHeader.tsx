@@ -1,6 +1,6 @@
 import { Bell, Search, User, LogOut, HelpCircle, ChevronDown } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { useAuth } from "../../context/AuthContext"
+import { useAuth } from '../../context/AuthContext';
 
 import {
     DropdownMenu,

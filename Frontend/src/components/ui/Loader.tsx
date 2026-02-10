@@ -68,7 +68,7 @@ export const Loader: React.FC<LoaderProps> = ({
                     <p className={`font-black text-gray-500 uppercase tracking-[0.25em] ${size === 'sm' ? 'text-[8px]' : 'text-[11px]'}`}>
                         {text}
                     </p>
-                    <div className={`h-0.5 w-8 bg-gradient-to-r from-transparent via-${colors.underlayer} to-transparent mt-1.5`} />
+                    <div className={`h-0.5 w-8 bg-linear-to-r from-transparent via-${colors.underlayer} to-transparent mt-1.5`} />
                 </div>
             )}
         </div>

@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { Loader } from '../../components/ui/Loader';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/Dialog';
-import PatientRegistrationForm from '../../components/receptionist/PatientRegistrationForm';
+import PatientRegistrationForm from '../../components/features/receptionist/PatientRegistrationForm';
 import { patientService } from '../../api/patient.service';
 import type { Patient } from '../../types/patient';
 import { toast } from 'react-hot-toast';

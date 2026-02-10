@@ -8,8 +8,8 @@ import {
     ShieldCheck, Clock, Filter, LayoutGrid, List
 } from 'lucide-react';
 import { authService } from '../../api/auth.service';
-import { AddUserDialog } from '../../components/admin/AddUserDialog';
-import { cn } from '../../lib/utils';
+import { AddUserDialog } from '../../components/features/admin/AddUserDialog';
+import { cn } from '../../utils/cn';
 
 // UI Components
 import { Button } from '../../components/ui/Button';
@@ -245,7 +245,7 @@ const StaffManagement: React.FC = () => {
                     <Card className="border border-[#E2E8F0] shadow-lg overflow-hidden rounded-2xl bg-white">
                         <Table>
                             <TableHeader>
-                                <TableRow className="bg-gradient-to-r from-[#27374D] to-[#526D82] hover:from-[#27374D] hover:to-[#526D82]">
+                                <TableRow className="bg-linear-to-r from-[#27374D] to-[#526D82] hover:from-[#27374D] hover:to-[#526D82]">
                                     <TableHead className="font-semibold text-white/90 h-14 pl-8 text-xs uppercase tracking-wider">Employee</TableHead>
                                     <TableHead className="font-semibold text-white/90 h-14 text-xs uppercase tracking-wider">Department</TableHead>
                                     <TableHead className="font-semibold text-white/90 h-14 text-xs uppercase tracking-wider">Status</TableHead>
@@ -259,7 +259,7 @@ const StaffManagement: React.FC = () => {
                                     <TableRow>
                                         <TableCell colSpan={5} className="h-64 text-center bg-[#FAFBFC]">
                                             <div className="flex flex-col items-center gap-4">
-                                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#769FCD] to-[#526D82] flex items-center justify-center">
+                                                <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-[#769FCD] to-[#526D82] flex items-center justify-center">
                                                     <Loader2 className="w-6 h-6 animate-spin text-white" />
                                                 </div>
                                                 <p className="text-[#64748B] font-medium">Loading staff records...</p>
@@ -405,7 +405,7 @@ const StaffManagement: React.FC = () => {
                         </Table>
 
                         {/* Professional Pagination */}
-                        <div className="bg-gradient-to-r from-[#F8FAFC] to-[#F1F5F9] px-8 py-4 flex items-center justify-between border-t border-[#E2E8F0]">
+                        <div className="bg-linear-to-r from-[#F8FAFC] to-[#F1F5F9] px-8 py-4 flex items-center justify-between border-t border-[#E2E8F0]">
                             <p className="text-sm text-[#64748B]">
                                 Showing <span className="font-semibold text-[#27374D]">{paginatedStaff.length}</span> of <span className="font-semibold text-[#27374D]">{filteredStaff.length}</span> staff members
                             </p>
@@ -452,7 +452,7 @@ const StaffManagement: React.FC = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                             {isLoading ? (
                                 Array.from({ length: 8 }).map((_, i) => (
-                                    <Card key={i} className="border border-[#E2E8F0] shadow-md h-52 animate-pulse bg-gradient-to-br from-white to-[#F8FAFC] rounded-2xl" />
+                                    <Card key={i} className="border border-[#E2E8F0] shadow-md h-52 animate-pulse bg-linear-to-br from-white to-[#F8FAFC] rounded-2xl" />
                                 ))
                             ) : paginatedStaff.length === 0 ? (
                                 <div className="col-span-full h-64 flex flex-col items-center justify-center gap-4 bg-white rounded-2xl border border-[#E2E8F0] shadow-md">

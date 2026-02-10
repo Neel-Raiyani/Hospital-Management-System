@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, AlertCircle, User, Zap, AlertTriangle } from 'lucide-react';
-import { Loader } from '../ui/Loader';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/Dialog';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { doctorService, type Doctor } from '../../api/doctor.service';
-import { formatDoctorName } from '../../utils/nameUtils';
-import { appointmentService } from '../../api/appointment.service';
-import { cn } from '../../lib/utils';
-import type { Patient } from '../../types/patient';
+import { Loader } from '../../ui/Loader';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../ui/Dialog';
+import { Button } from '../../ui/Button';
+import { Input } from '../../ui/Input';
+import { doctorService, type Doctor } from '../../../api/doctor.service';
+import { formatDoctorName } from '../../../utils/nameUtils';
+import { appointmentService } from '../../../api/appointment.service';
+import { cn } from '../../../utils/cn';
+import type { Patient } from '../../../types/patient';
 
 interface AppointmentBookingModalProps {
     isOpen: boolean;
@@ -209,7 +209,7 @@ const AppointmentBookingModal: React.FC<AppointmentBookingModalProps> = ({
                         {selectedDoctorData && (
                             <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
                                 <div className="flex items-start gap-3">
-                                    <User className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
+                                    <User className="w-5 h-5 text-teal-600 shrink-0 mt-0.5" />
                                     <div className="flex-1">
                                         <h4 className="font-semibold text-teal-900">{formatDoctorName(selectedDoctorData.name)}</h4>
                                         <p className="text-sm text-teal-700 mt-0.5">{selectedDoctorData.specialization}</p>
@@ -250,7 +250,7 @@ const AppointmentBookingModal: React.FC<AppointmentBookingModalProps> = ({
                         {/* Time Validation Error */}
                         {timeError && (
                             <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-                                <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                                <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                                 <p className="text-sm text-red-900">{timeError}</p>
                             </div>
                         )}
@@ -325,7 +325,7 @@ const AppointmentBookingModal: React.FC<AppointmentBookingModalProps> = ({
                         {/* Error Message */}
                         {error && (
                             <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-                                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                                <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
                                 <p className="text-sm font-medium text-red-900">{error}</p>
                             </div>
                         )}

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Search, User, Phone, AlertCircle, CheckCircle } from 'lucide-react';
-import { Loader } from '../ui/Loader';
-import { Input } from '../ui/Input';
-import { Button } from '../ui/Button';
-import { patientService } from '../../api/patient.service';
-import type { Patient } from '../../types/patient';
+import { Loader } from '../../ui/Loader';
+import { Input } from '../../ui/Input';
+import { Button } from '../../ui/Button';
+import { patientService } from '../../../api/patient.service';
+import type { Patient } from '../../../types/patient';
 
 interface PatientSearchProps {
     onPatientSelect: (patient: Patient) => void;
@@ -77,8 +77,8 @@ const PatientSearch: React.FC<PatientSearchProps> = ({ onPatientSelect, onCreate
                             setSearched(false);
                         }}
                         className={`flex-1 px-4 py-2.5 rounded-md font-medium text-sm transition-all ${searchType === 'phone'
-                                ? 'bg-teal-600 text-white shadow-sm'
-                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                            ? 'bg-teal-600 text-white shadow-sm'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                             }`}
                     >
                         <Phone className="w-4 h-4 inline mr-2" />
@@ -92,8 +92,8 @@ const PatientSearch: React.FC<PatientSearchProps> = ({ onPatientSelect, onCreate
                             setSearched(false);
                         }}
                         className={`flex-1 px-4 py-2.5 rounded-md font-medium text-sm transition-all ${searchType === 'id'
-                                ? 'bg-teal-600 text-white shadow-sm'
-                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                            ? 'bg-teal-600 text-white shadow-sm'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                             }`}
                     >
                         <User className="w-4 h-4 inline mr-2" />

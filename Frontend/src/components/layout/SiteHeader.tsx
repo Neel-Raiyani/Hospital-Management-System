@@ -1,6 +1,6 @@
 import { Bell, Search, User, LogOut, HelpCircle, ChevronDown } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { useAuth } from "../../context/AuthContext"
+import { useAuth } from '../../context/AuthContext';
 
 import {
     DropdownMenu,
@@ -28,7 +28,7 @@ export function SiteHeader({ showSearch = true }: SiteHeaderProps) {
     }
 
     return (
-        <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-[#B9D7EA]/50 bg-[#F7FBFC]/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-[#F7FBFC]/60">
+        <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-[#B9D7EA]/50 bg-[#F7FBFC]/95 px-4 backdrop-blur supports-backdrop-filter:bg-[#F7FBFC]/60">
             <div className="flex items-center gap-4">
                 <SidebarTrigger className="-ml-1" />
                 <Separator orientation="vertical" className="mr-2 h-4" />

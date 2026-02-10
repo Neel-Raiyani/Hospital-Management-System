@@ -5,10 +5,10 @@ import {
     MessageSquare, Activity, Beaker,
     Info, Loader2
 } from 'lucide-react';
-import type { Appointment } from '../../types/appointment';
-import { checkupService } from '../../api/checkup.service';
-import { appointmentService } from '../../api/appointment.service';
-import type { Checkup } from '../../types/checkup';
+import type { Appointment } from '../../../types/appointment';
+import { checkupService } from '../../../api/checkup.service';
+import { appointmentService } from '../../../api/appointment.service';
+import type { Checkup } from '../../../types/checkup';
 
 interface CheckupFormProps {
     appointment: Appointment;

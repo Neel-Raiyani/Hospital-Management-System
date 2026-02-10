@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { appointmentService } from '../../api/appointment.service';
-import { patientService } from '../../api/patient.service';
-import { doctorService } from '../../api/doctor.service';
-import type { Appointment, AppointmentStatus } from '../../types/appointment';
-import { formatDoctorName } from '../../utils/nameUtils';
-import { useAuth } from '../../hooks/useAuth';
-import StatusUpdateModal from '../../components/appointments/StatusUpdateModal';
-import CheckupForm from '../../components/appointments/CheckupForm';
-import PrescriptionForm from '../../components/appointments/PrescriptionForm';
+import { appointmentService } from '../api/appointment.service';
+import { patientService } from '../api/patient.service';
+import { doctorService } from '../api/doctor.service';
+import type { Appointment, AppointmentStatus } from '../types/appointment';
+import { formatDoctorName } from '../utils/nameUtils';
+import { useAuth } from '../hooks/useAuth';
+import StatusUpdateModal from '../components/features/appointments/StatusUpdateModal';
+import CheckupForm from '../components/features/appointments/CheckupForm';
+import PrescriptionForm from '../components/features/appointments/PrescriptionForm';
 import { Pill, Stethoscope, RefreshCw, ChevronRight, Search, Calendar } from 'lucide-react';
-import { Loader } from '../../components/ui/Loader';
-import { checkupService } from '../../api/checkup.service';
-import { prescriptionService } from '../../api/prescription.service';
+import { Loader } from '../components/ui/Loader';
+import { checkupService } from '../api/checkup.service';
+import { prescriptionService } from '../api/prescription.service';
 
 const AppointmentList: React.FC = () => {
     const { user } = useAuth();
@@ -81,7 +81,7 @@ const AppointmentList: React.FC = () => {
         fetchAppointments();
     }, [user?.id, user?.role]);
 
-    const statusColors = {
+    const statusColors: Record<AppointmentStatus, string> = {
         WAITING: 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100',
         LAB_TESTS: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100',
         REVIEW: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
@@ -89,7 +89,7 @@ const AppointmentList: React.FC = () => {
         CANCELLED: 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100',
     };
 
-    const filteredAppointments = (appointments || []).filter(app => {
+    const filteredAppointments = (appointments || []).filter((app: Appointment) => {
         const matchesStatus = filter === 'ALL' || app.status === filter;
         const patientName = app.patient?.name?.toLowerCase() || '';
         const matchesSearch =
@@ -165,7 +165,7 @@ const AppointmentList: React.FC = () => {
                         <tbody className="divide-y divide-gray-50">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-center">
+                                    <td colSpan={5} className="px-6 py-12 text-center">
                                         <Loader
                                             size="md"
                                             variant={user?.role === 'RECEPTIONIST' ? 'teal' : 'blue'}
@@ -179,10 +179,10 @@ const AppointmentList: React.FC = () => {
                                         <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                                             <Calendar className="w-8 h-8 text-gray-300" />
                                         </div>
-                                        <p className="text-gray-500">No appointments found</p>
+                                        <p className="mt-2 text-slate-500 text-center">No appointments found matching your filters.</p>
                                     </td>
                                 </tr>
-                            ) : filteredAppointments.map((app) => (
+                            ) : filteredAppointments.map((app: Appointment) => (
                                 <tr key={app.id} className="hover:bg-gray-50/50 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="font-bold text-blue-600">#{app.tokenNumber}</div>

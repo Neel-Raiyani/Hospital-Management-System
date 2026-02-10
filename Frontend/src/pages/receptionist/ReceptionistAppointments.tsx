@@ -380,7 +380,7 @@ const ReceptionistAppointments: React.FC = () => {
                             ) : filteredAppointments.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-20 text-center">
-                                        <div className="w-20 h-20 bg-gray-50 rounded-lg flex items-center justify-center mx-auto mb-4">
+                                        <div className="shrink-0 bg-blue-100 p-2 rounded-lg flex items-center justify-center mx-auto mb-4">
                                             <FileQuestion className="w-10 h-10 text-gray-300" />
                                         </div>
                                         <h3 className="text-lg font-bold text-gray-900">No appointments found</h3>
@@ -456,7 +456,7 @@ const ReceptionistAppointments: React.FC = () => {
                     <div className="fixed inset-0 z-51 flex items-center justify-center p-4 pointer-events-none">
                         <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 pointer-events-auto animate-in zoom-in duration-200">
                             <div className="flex items-start gap-4">
-                                <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-red-100">
+                                <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0 bg-red-100">
                                     <XCircle className="w-6 h-6 text-red-600" />
                                 </div>
                                 <div className="flex-1">

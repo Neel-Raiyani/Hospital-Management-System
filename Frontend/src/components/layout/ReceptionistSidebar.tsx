@@ -6,7 +6,7 @@ import {
     Activity,
 } from "lucide-react"
 import { useLocation, Link, useNavigate } from "react-router-dom"
-import { useAuth } from "../../context/AuthContext"
+import { useAuth } from '../../context/AuthContext';
 import { NavLink, Box, Text, Stack, rem, UnstyledButton } from "@mantine/core"
 import {
     Sidebar,

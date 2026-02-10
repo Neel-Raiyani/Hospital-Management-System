@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { Suspense } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { Outlet, useLocation } from 'react-router-dom';

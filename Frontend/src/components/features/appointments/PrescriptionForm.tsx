@@ -4,10 +4,10 @@ import {
     Trash2, Pill, ClipboardList,
     FileText, Loader2, Download
 } from 'lucide-react';
-import type { Appointment } from '../../types/appointment';
-import type { Medicine } from '../../types/prescription';
-import { prescriptionService } from '../../api/prescription.service';
-import type { Prescription } from '../../types/prescription';
+import type { Appointment } from '../../../types/appointment';
+import type { Medicine } from '../../../types/prescription';
+import { prescriptionService } from '../../../api/prescription.service';
+import type { Prescription } from '../../../types/prescription';
 
 interface PrescriptionFormProps {
     appointment: Appointment;

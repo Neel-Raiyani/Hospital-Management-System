@@ -12,7 +12,7 @@ import { adminService, type DashboardStats } from '../../api/admin.service';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { AddUserDialog } from '../../components/admin/AddUserDialog';
+import { AddUserDialog } from '../../components/features/admin/AddUserDialog';
 
 const COLORS = ['#769FCD', '#0EA5E9', '#818CF8', '#27374D'];
 

@@ -15,4 +15,21 @@ export default defineConfig({
     exclude: ['@mantine/core', '@mantine/hooks'],
     include: ['react', 'react-dom'],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/scheduler/')) {
+              return 'vendor-react';
+            }
+            if (id.includes('@mantine')) return 'vendor-mantine';
+            if (id.includes('lucide-react')) return 'vendor-icons';
+            return 'vendor';
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
+  },
 })

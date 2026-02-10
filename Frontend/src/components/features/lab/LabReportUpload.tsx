@@ -4,8 +4,8 @@ import {
     AlertCircle, Loader2, Trash2,
     FileUp
 } from 'lucide-react';
-import { labService } from '../../api/lab.service';
-import type { LabTest } from '../../types/lab';
+import { labService } from '../../../api/lab.service';
+import type { LabTest } from '../../../types/lab';
 
 interface LabReportUploadProps {
     labTest: LabTest;
@@ -109,7 +109,7 @@ const LabReportUpload: React.FC<LabReportUploadProps> = ({
                             <div
                                 onClick={() => !uploading && fileInputRef.current?.click()}
                                 className={`
-                                    relative border-4 border-dashed rounded-[2rem] p-10 text-center transition-all cursor-pointer
+                                    relative border-4 border-dashed rounded-4xl p-10 text-center transition-all cursor-pointer
                                     ${uploading ? 'opacity-50 pointer-events-none' : 'hover:bg-blue-50/50 hover:border-blue-200 border-gray-100'}
                                 `}
                             >
@@ -200,7 +200,7 @@ const LabReportUpload: React.FC<LabReportUploadProps> = ({
                         <button
                             disabled={uploading || selectedFiles.length === 0}
                             onClick={handleUpload}
-                            className="flex-[2] px-8 py-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
+                            className="flex-2 px-8 py-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
                         >
                             {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
                             Start Upload

@@ -7,16 +7,16 @@ import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { authService, type CreateUserRequest, type CreateUserResponse } from '../../api/auth.service';
-import { cn } from '../../lib/utils';
+import { authService, type CreateUserRequest, type CreateUserResponse } from '../../../api/auth.service';
+import { cn } from '../../../utils/cn';
 
 // UI Components
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
+import { Button } from '../../ui/Button';
+import { Input } from '../../ui/Input';
 import {
     Dialog, DialogContent, DialogDescription,
     DialogHeader, DialogTitle, DialogTrigger
-} from '../ui/Dialog';
+} from '../../ui/Dialog';
 import {
     Form,
     FormControl,
@@ -24,13 +24,13 @@ import {
     FormItem,
     FormLabel,
     FormMessage,
-} from '../ui/Form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/Select';
+} from '../../ui/Form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/Select';
 import {
     AlertDialog, AlertDialogAction, AlertDialogCancel,
     AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
     AlertDialogHeader, AlertDialogTitle
-} from '../ui/AlertDialog';
+} from '../../ui/AlertDialog';
 
 // ============================================================================
 // SCHEMA & TYPES
