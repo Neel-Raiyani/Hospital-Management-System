@@ -1,6 +1,7 @@
 import React from 'react';
 import { Clock, User, Stethoscope, Activity, CheckCircle, XCircle } from 'lucide-react';
 import { Badge } from '../../ui/Badge';
+import { Loader } from '../../ui/Loader';
 import { formatDoctorName } from '../../../utils/nameUtils';
 import type { Appointment, AppointmentStatus } from '../../../types/appointment';
 
@@ -64,9 +65,8 @@ const DailyOPDQueue: React.FC<DailyOPDQueueProps> = ({ appointments, loading }) 
                     <h3 className="text-lg font-semibold text-gray-900">Daily OPD Queue</h3>
                     <p className="text-sm text-gray-600 mt-0.5">Real-time patient queue status</p>
                 </div>
-                <div className="p-12 text-center">
-                    <div className="w-10 h-10 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                    <p className="text-sm font-medium text-gray-500">Loading queue...</p>
+                <div className="p-12">
+                    <Loader size="md" text="Loading queue..." variant="teal" />
                 </div>
             </div>
         );

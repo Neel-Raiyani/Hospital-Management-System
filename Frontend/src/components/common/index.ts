@@ -12,3 +12,6 @@ export type { TableColumn } from './DataTable';
 
 export { FormInput } from './FormInput';
 export type { ValidationState } from './FormInput';
+
+export { CustomDatePicker } from './CustomDatePicker';
+

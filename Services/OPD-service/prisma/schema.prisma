@@ -41,6 +41,7 @@ model Appointment {
   status           AppointmentStatus  @default(WAITING)
   paymentType      PaymentType        @default(CASH)
   checkupFee       Float?             @default(0)
+  receptionistId   String
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }

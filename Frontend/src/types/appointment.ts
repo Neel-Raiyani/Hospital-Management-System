@@ -9,6 +9,7 @@ export interface Appointment {
     status: AppointmentStatus;
     paymentType: 'CASH' | 'ONLINE';
     checkupFee: number;
+    receptionistId: string;
     createdAt: string;
     updatedAt: string;
     // Joined data

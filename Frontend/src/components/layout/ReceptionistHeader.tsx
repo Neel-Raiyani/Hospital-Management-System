@@ -38,14 +38,14 @@ export function ReceptionistHeader({ showSearch = true }: ReceptionistHeaderProp
                         <input
                             type="text"
                             placeholder="Search patients, records..."
-                            className="h-10 w-full rounded-xl bg-gray-50/80 pl-11 pr-4 text-[14.5px] font-medium transition-all focus:bg-white focus:ring-4 focus:ring-teal-500/10 outline-none border border-transparent focus:border-teal-400 placeholder:text-gray-400"
+                            className="h-10 w-full rounded-lg bg-gray-50/80 pl-11 pr-4 text-[14.5px] font-medium transition-all focus:bg-white focus:ring-4 focus:ring-teal-500/10 outline-none border border-transparent focus:border-teal-400 placeholder:text-gray-400"
                         />
                     </div>
                 )}
             </div>
 
             <div className="flex items-center gap-5">
-                <Button variant="ghost" size="icon" className="relative size-10 text-gray-500 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-all">
+                <Button variant="ghost" size="icon" className="relative size-10 text-gray-500 hover:bg-teal-50 hover:text-teal-700 rounded-lg transition-all">
                     <Bell className="size-5.5" />
                     <span className="absolute top-2.5 right-2.5 size-3 bg-red-500 rounded-full ring-2 ring-white" />
                 </Button>
@@ -54,8 +54,8 @@ export function ReceptionistHeader({ showSearch = true }: ReceptionistHeaderProp
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <button className="flex items-center gap-3.5 pl-2 pr-1.5 py-1.5 rounded-2xl hover:bg-teal-50/80 transition-all border border-transparent hover:border-teal-100 group">
-                            <div className="flex size-10 items-center justify-center rounded-xl bg-teal-600 text-white font-bold shadow-md shadow-teal-600/20 group-hover:scale-105 transition-transform">
+                        <button className="flex items-center gap-3.5 pl-2 pr-1.5 py-1.5 rounded-lg hover:bg-teal-50/80 transition-all border border-transparent hover:border-teal-100 group">
+                            <div className="flex size-10 items-center justify-center rounded-lg bg-teal-700 text-white font-bold shadow-md shadow-teal-700/20 group-hover:scale-105 transition-transform">
                                 {user?.name?.charAt(0).toUpperCase() || 'R'}
                             </div>
                             <div className="text-left hidden sm:block">
@@ -65,7 +65,7 @@ export function ReceptionistHeader({ showSearch = true }: ReceptionistHeaderProp
                             <ChevronDown className="size-4 text-gray-400 transition-transform group-data-[state=open]:rotate-180" />
                         </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl shadow-xl mt-1">
+                    <DropdownMenuContent align="end" className="w-56 p-2 rounded-lg shadow-xl mt-1">
                         <DropdownMenuLabel className="px-3 py-2 text-xs font-bold text-gray-600 uppercase">Account Profile</DropdownMenuLabel>
                         <DropdownMenuItem
                             className="rounded-lg p-3 gap-3 cursor-pointer hover:bg-teal-50"

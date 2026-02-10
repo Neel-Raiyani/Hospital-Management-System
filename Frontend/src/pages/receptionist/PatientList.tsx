@@ -1,11 +1,27 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-    Search, UserPlus, Phone, User, Calendar, Users,
-    ChevronLeft, ChevronRight, ChevronDown, X,
-    Hash, Shield, Activity
+    Search,
+    User,
+    Calendar,
+    Phone,
+    Shield,
+    ArrowUp,
+    ArrowDown,
+    ArrowUpDown,
+    Users,
+    ChevronLeft,
+    ChevronRight,
+    UserPlus,
 } from 'lucide-react';
 import { Loader } from '../../components/ui/Loader';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/Dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "../../components/ui/Select";
 import PatientRegistrationForm from '../../components/features/receptionist/PatientRegistrationForm';
 import { patientService } from '../../api/patient.service';
 import type { Patient } from '../../types/patient';
@@ -17,15 +33,27 @@ const PatientList: React.FC = () => {
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
     const [limit] = useState(10);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ACTIVE');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+
+    // Search and Filter State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [genderFilter, setGenderFilter] = useState<string>('ALL');
+    const [sortConfig, setSortConfig] = useState<{ key: 'patientId'; direction: 'asc' | 'desc' } | null>({ key: 'patientId', direction: 'asc' });
+
+    // Debounce search query
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+            setPage(1); // Reset to first page on search
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     const fetchPatients = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await patientService.listPatients(page, limit);
+            const response = await patientService.listPatients(page, limit, debouncedSearch);
             setPatients(response.data);
             setTotal(response.total);
         } catch (error: any) {
@@ -34,44 +62,42 @@ const PatientList: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [page, limit]);
+    }, [page, limit, debouncedSearch]);
 
     useEffect(() => {
         fetchPatients();
     }, [fetchPatients]);
 
-    const handleRegistrationSuccess = (patientPhone: string) => {
-        toast.success(`Patient registered successfully! Phone: ${patientPhone}`);
+    const handleRegistrationSuccess = () => {
         setShowRegistrationModal(false);
         fetchPatients();
     };
 
-
-
-    const filteredPatients = patients.filter((patient: Patient) => {
-        const matchesSearch =
-            patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            patient.phone.includes(searchTerm) ||
-            patient.patientId.toString().includes(searchTerm);
-
-        const matchesStatus =
-            statusFilter === 'ALL' ? true :
-                statusFilter === 'ACTIVE' ? patient.isActive :
-                    !patient.isActive;
-
-        return matchesSearch && matchesStatus;
-    }).sort((a, b) => {
-        if (sortOrder === 'asc') {
-            return a.patientId - b.patientId;
-        } else {
-            return b.patientId - a.patientId;
+    const handleSort = (key: 'patientId') => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
         }
-    });
+        setSortConfig({ key, direction });
+    };
+
+    const processedPatients = patients
+        .filter((patient: Patient) => {
+            const matchesGender = genderFilter === 'ALL' || patient.gender.toUpperCase() === genderFilter;
+            return patient.isActive && matchesGender;
+        })
+        .sort((a, b) => {
+            if (!sortConfig) return 0;
+            const { key, direction } = sortConfig;
+            if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
+            if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
+            return 0;
+        });
 
     const totalPages = Math.ceil(total / limit);
 
     return (
-        <div className="px-4 pb-4 pt-2 max-w-[1600px] mx-auto space-y-4 animate-in fade-in duration-500">
+        <div className="px-4 pb-4 pt-2 max-w-[1600px] mx-auto space-y-4 animate-in fade-in duration-500 font-['Inter',sans-serif]">
             {/* Header Area */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -83,163 +109,166 @@ const PatientList: React.FC = () => {
                 </div>
                 <button
                     onClick={() => setShowRegistrationModal(true)}
-                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 shadow-md shadow-teal-600/10 transition-all active:scale-95 text-sm"
+                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-teal-600 text-white rounded-lg font-bold hover:bg-teal-700 shadow-md shadow-teal-600/10 transition-all active:scale-95 text-sm"
                 >
                     <UserPlus className="w-4.5 h-4.5" />
                     New Patient
                 </button>
             </div>
 
-            {/* Filters and Search */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-2">
-                <div className="flex flex-col lg:flex-row gap-3">
-                    <div className="relative flex-1 group">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 group-focus-within:text-teal-500 transition-colors" />
-                        <input
-                            type="text"
-                            placeholder="Search by name, phone or ID..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-11 pr-11 h-10 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-4 focus:ring-teal-500/5 focus:border-teal-400 focus:bg-white transition-all text-sm font-medium shadow-sm shadow-black/5"
-                        />
-                        {searchTerm && (
-                            <button
-                                onClick={() => setSearchTerm('')}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-200 rounded-lg transition-all text-gray-400 hover:text-gray-600 active:scale-95"
-                            >
-                                <X className="w-3.5 h-3.5" />
-                            </button>
-                        )}
+            {/* Filters and Search Bar - Elegant Redesign */}
+            <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
+                <div className="flex-1 relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+                        <Search className="text-gray-400 w-4 h-4 group-focus-within:text-teal-600 transition-colors duration-200" />
+                        <div className="w-px h-4 bg-gray-300 group-focus-within:bg-teal-200 transition-colors hidden sm:block" />
                     </div>
+                    <input
+                        type="text"
+                        placeholder="Search by name, phone or ID..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-12 pr-4 h-[38px] bg-gray-50/50 border border-gray-400 rounded-lg text-sm font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-600 focus:bg-white transition-all duration-200"
+                    />
                 </div>
 
-                <div className="flex items-center gap-6 border-t border-gray-50 pt-2 flex-wrap">
-                    {/* Status Segmented Control */}
-                    <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Patient Status</span>
-                        <div className="flex bg-gray-100 p-1 rounded-xl items-center relative h-9">
-                            {(['ALL', 'ACTIVE', 'INACTIVE'] as const).map((s) => (
-                                <button
-                                    key={s}
-                                    onClick={() => setStatusFilter(s)}
-                                    className={`relative z-10 px-4 h-7 flex items-center justify-center rounded-lg text-[10px] font-bold transition-all duration-300 whitespace-nowrap ${statusFilter === s ? 'text-teal-700' : 'text-gray-500 hover:text-gray-900'
-                                        }`}
-                                >
-                                    {statusFilter === s && (
-                                        <div className="absolute inset-0 bg-white rounded-lg shadow-sm animate-in fade-in zoom-in-95 duration-200" style={{ zIndex: -1 }} />
-                                    )}
-                                    {s}
-                                </button>
-                            ))}
-                        </div>
+                <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-3 bg-gray-50/50 px-3 h-[38px] rounded-lg border border-gray-400">
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter whitespace-nowrap">Filter By</span>
+                        <div className="w-px h-4 bg-gray-300" />
+                        <Select value={genderFilter} onValueChange={setGenderFilter}>
+                            <SelectTrigger className="border-none bg-transparent hover:bg-white/50 h-8 font-black text-gray-900 focus:ring-0 focus:ring-offset-0 transition-all px-2 min-w-[120px]">
+                                <div className="flex items-center gap-2">
+                                    <svg className="w-3.5 h-3.5 text-teal-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="8" cy="15" r="5" />
+                                        <path d="M13 10l6 -6" />
+                                        <path d="M19 4l0 4.5" />
+                                        <path d="M19 4l-4.5 0" />
+                                        <path d="M8 20l0 3" />
+                                        <path d="M5.5 21l5 0" />
+                                    </svg>
+                                    <SelectValue placeholder="Gender" />
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent className="border-gray-400 rounded-lg shadow-xl">
+                                <SelectItem value="ALL" className="font-bold py-2.5 focus:bg-teal-50 focus:text-teal-700 cursor-pointer">
+                                    All Genders
+                                </SelectItem>
+                                <SelectItem value="MALE" className="font-bold py-2.5 focus:bg-teal-50 focus:text-teal-700 cursor-pointer">
+                                    Male
+                                </SelectItem>
+                                <SelectItem value="FEMALE" className="font-bold py-2.5 focus:bg-teal-50 focus:text-teal-700 cursor-pointer">
+                                    Female
+                                </SelectItem>
+                                <SelectItem value="OTHER" className="font-bold py-2.5 focus:bg-teal-50 focus:text-teal-700 cursor-pointer">
+                                    Other
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
-                    {/* Sort Control */}
-                    <div className="flex items-center gap-3 border-l border-gray-100 pl-6">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Sort Order</span>
-                        <button
-                            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                            className={`flex items-center gap-2 h-9 px-4 rounded-xl font-bold text-[10px] transition-all duration-200 border ${sortOrder === 'asc'
-                                ? 'bg-white border-gray-200 text-gray-700 shadow-sm'
-                                : 'bg-teal-50 border-teal-100 text-teal-700 shadow-sm shadow-teal-600/5'
-                                }`}
-                        >
-                            <div className={`transition-transform duration-300 ${sortOrder === 'desc' ? 'rotate-180' : ''}`}>
-                                <ChevronDown className="w-3.5 h-3.5" />
-                            </div>
-                            {sortOrder === 'asc' ? 'Oldest First' : 'Newest First'}
-                        </button>
+                    <div className="h-10 px-4 bg-teal-50 border border-teal-200 rounded-lg flex items-center gap-2.5 shadow-sm">
+                        <div className="w-2 h-2 bg-teal-500 rounded-full animate-pulse" />
+                        <span className="text-xs font-black text-teal-800 uppercase tracking-widest">
+                            {processedPatients.length} Results
+                        </span>
                     </div>
                 </div>
             </div>
 
             {/* Patient Table */}
-            <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
+            <div className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-400 min-h-[450px] flex flex-col">
                 {loading ? (
-                    <div className="py-24 flex flex-col items-center justify-center text-gray-500">
-                        <Loader size="md" text="Loading Patients..." />
+                    <div className="py-32 flex flex-col items-center justify-center">
+                        <Loader size="md" text="Loading Patients..." variant="teal" />
                     </div>
-                ) : filteredPatients.length === 0 ? (
+                ) : processedPatients.length === 0 ? (
                     <div className="py-20 flex flex-col items-center justify-center text-center px-4">
-                        <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4 text-gray-300">
+                        <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4 text-gray-300 border border-gray-200">
                             <User className="w-10 h-10" />
                         </div>
                         <h3 className="text-xl font-bold text-gray-900 mb-2">No patients found</h3>
                         <p className="text-gray-500 max-w-sm mx-auto">
-                            {searchTerm
-                                ? `We couldn't find any results matching "${searchTerm}"`
-                                : "There are no patients registered in the system yet."}
+                            There are no active patients registered in the system yet.
                         </p>
-                        {searchTerm && (
-                            <button
-                                onClick={() => setSearchTerm('')}
-                                className="mt-4 text-teal-600 font-bold hover:underline"
-                            >
-                                Clear search
-                            </button>
-                        )}
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                    <div className="overflow-x-auto grow">
+                        <table className="w-full text-center border-collapse">
                             <thead>
-                                <tr className="bg-gray-50/50 border-b border-gray-100">
-                                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">
-                                        <div className="flex items-center gap-2">
-                                            <Hash className="w-3 h-3" />
-                                            ID
+                                <tr className="bg-gray-50/80 border-b border-gray-400">
+                                    <th
+                                        className="px-6 py-4 text-xs font-black text-gray-900 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-gray-100 transition-colors border-r border-gray-200"
+                                        onClick={() => handleSort('patientId')}
+                                    >
+                                        <div className="flex items-center gap-2 justify-center">
+                                            Patient ID
+                                            {sortConfig?.key === 'patientId' ? (
+                                                sortConfig.direction === 'asc' ? <ArrowUp className="w-5 h-5 text-teal-600 font-black" /> : <ArrowDown className="w-5 h-5 text-teal-600 font-black" />
+                                            ) : (
+                                                <ArrowUpDown className="w-5 h-5 text-gray-400" />
+                                            )}
                                         </div>
                                     </th>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">
-                                        <div className="flex items-center gap-2">
-                                            <User className="w-3 h-3" />
+                                    <th className="px-6 py-4 text-xs font-black text-gray-900 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">
+                                        <div className="flex items-center gap-2 justify-center">
+                                            <User className="w-4 h-4 text-teal-600" />
                                             Name
                                         </div>
                                     </th>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">
-                                        <div className="flex items-center gap-2">
-                                            <Calendar className="w-3 h-3" />
+                                    <th className="px-6 py-4 text-xs font-black text-gray-900 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">
+                                        <div className="flex items-center gap-2 justify-center">
+                                            <Calendar className="w-4 h-4 text-teal-600" />
                                             DOB
                                         </div>
                                     </th>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">
-                                        <div className="flex items-center gap-2">
-                                            <Activity className="w-3 h-3" />
+                                    <th className="px-6 py-4 text-xs font-black text-gray-900 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">
+                                        <div className="flex items-center gap-2 justify-center">
+                                            <svg className="w-4 h-4 text-teal-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                <circle cx="8" cy="15" r="5" />
+                                                <path d="M13 10l6 -6" />
+                                                <path d="M19 4l0 4.5" />
+                                                <path d="M19 4l-4.5 0" />
+                                                <path d="M8 20l0 3" />
+                                                <path d="M5.5 21l5 0" />
+                                            </svg>
                                             Gender/Age
                                         </div>
                                     </th>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">
-                                        <div className="flex items-center gap-2">
-                                            <Phone className="w-3 h-3" />
+                                    <th className="px-6 py-4 text-xs font-black text-gray-900 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">
+                                        <div className="flex items-center gap-2 justify-center">
+                                            <Phone className="w-4 h-4 text-teal-600" />
                                             Contact
                                         </div>
                                     </th>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right whitespace-nowrap">
-                                        <div className="flex items-center gap-2 justify-end">
-                                            <Shield className="w-3 h-3" />
+                                    <th className="px-6 py-4 text-xs font-black text-gray-900 uppercase tracking-wider whitespace-nowrap">
+                                        <div className="flex items-center gap-2 justify-center">
+                                            <Shield className="w-4 h-4 text-teal-600" />
                                             Status
                                         </div>
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {filteredPatients.map((patient: Patient) => {
+                            <tbody className="">
+                                {processedPatients.map((patient: Patient) => {
                                     const age = new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear();
                                     return (
                                         <tr
                                             key={patient.id}
-                                            className="border-b border-gray-50 last:border-0 hover:bg-gray-50/30 transition-colors group"
+                                            className="hover:bg-teal-50/20 transition-colors group border-b border-gray-200"
                                         >
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded">
-                                                    #{patient.patientId}
-                                                </span>
+                                            <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
+                                                <div className="flex justify-center">
+                                                    <span className="text-xs font-black text-teal-700 bg-teal-50 px-2.5 py-1 rounded border border-teal-100">
+                                                        #{patient.patientId}
+                                                    </span>
+                                                </div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="font-bold text-gray-900">{patient.name}</div>
+                                            <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
+                                                <div className="text-sm font-black text-gray-900 group-hover:text-teal-700 transition-colors">{patient.name}</div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-bold text-gray-700">
+                                            <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
+                                                <div className="text-sm font-black text-gray-700">
                                                     {new Date(patient.dateOfBirth).toLocaleDateString(undefined, {
                                                         year: 'numeric',
                                                         month: 'short',
@@ -247,20 +276,22 @@ const PatientList: React.FC = () => {
                                                     })}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="text-sm font-bold text-gray-700 capitalize">{patient.gender.toLowerCase()}</span>
-                                                <span className="text-sm text-gray-500 font-medium">, {age} yrs</span>
+                                            <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
+                                                <span className="text-sm font-black text-gray-800 capitalize">{patient.gender.toLowerCase()}</span>
+                                                <span className="text-sm text-gray-500 font-black">, {age} yrs</span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
+                                                <div className="text-sm font-black text-gray-900">{patient.phone}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-bold text-[#111827]">{patient.phone}</div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right whitespace-nowrap">
-                                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded inline-block ${patient.isActive
-                                                    ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                                                    : 'bg-red-50 text-red-600 border border-red-100'
-                                                    }`}>
-                                                    {patient.isActive ? 'Active' : 'Inactive'}
-                                                </span>
+                                                <div className="flex justify-center">
+                                                    <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full inline-block border ${patient.isActive
+                                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                        : 'bg-red-50 text-red-700 border-red-200'
+                                                        }`}>
+                                                        {patient.isActive ? 'Active' : 'Inactive'}
+                                                    </span>
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -271,27 +302,27 @@ const PatientList: React.FC = () => {
                 )}
 
                 {/* Pagination */}
-                {!loading && filteredPatients.length > 0 && (
-                    <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
-                        <p className="text-sm text-gray-600">
-                            Showing <span className="font-bold text-gray-900">{((page - 1) * limit) + 1}</span> to <span className="font-bold text-gray-900">{Math.min(page * limit, total)}</span> of <span className="font-bold text-gray-900">{total}</span> patients
+                {!loading && processedPatients.length > 0 && (
+                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-400 mt-auto flex flex-col md:flex-row items-center justify-between gap-4">
+                        <p className="text-sm text-gray-600 font-black">
+                            Showing <span className="font-black text-gray-900">{((page - 1) * limit) + 1}</span> to <span className="font-black text-gray-900">{Math.min(page * limit, total)}</span> of <span className="font-black text-gray-900">{total}</span> patients
                         </p>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={(e) => { e.stopPropagation(); setPage((p: number) => Math.max(1, p - 1)); }}
                                 disabled={page === 1}
-                                className="p-2 bg-white border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                                className="p-2 bg-white border border-gray-400 rounded-lg text-gray-600 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-300 disabled:opacity-50 transition-all shadow-sm"
                             >
                                 <ChevronLeft className="w-4 h-4" />
                             </button>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1.5">
                                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                                     <button
                                         key={p}
                                         onClick={(e) => { e.stopPropagation(); setPage(p); }}
-                                        className={`w-8 h-8 rounded-md text-sm font-bold transition-colors ${page === p
-                                            ? 'bg-teal-600 text-white'
-                                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                        className={`w-9 h-9 rounded-lg text-sm font-black transition-all shadow-sm border ${page === p
+                                            ? 'bg-teal-600 text-white border-teal-600'
+                                            : 'bg-white border-gray-400 text-gray-600 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-300'
                                             }`}
                                     >
                                         {p}
@@ -301,7 +332,7 @@ const PatientList: React.FC = () => {
                             <button
                                 onClick={(e) => { e.stopPropagation(); setPage((p: number) => Math.min(totalPages, p + 1)); }}
                                 disabled={page === totalPages}
-                                className="p-2 bg-white border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                                className="p-2 bg-white border border-gray-400 rounded-lg text-gray-600 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-300 disabled:opacity-50 transition-all shadow-sm"
                             >
                                 <ChevronRight className="w-4 h-4" />
                             </button>
@@ -332,8 +363,6 @@ const PatientList: React.FC = () => {
                     </div>
                 </DialogContent>
             </Dialog>
-
-
         </div>
     );
 };

@@ -4,9 +4,23 @@ import { Loader } from './Loader';
 
 // Universal Page Loader Component
 export function PageLoader() {
+    // Attempt to get user role for correct color variant
+    const storedToken = localStorage.getItem('token');
+    let variant: 'teal' | 'blue' = 'blue';
+
+    if (storedToken) {
+        try {
+            // Simple check without full JWT decode to keep it fast
+            const payload = JSON.parse(atob(storedToken.split('.')[1]));
+            if (payload.role === 'RECEPTIONIST') variant = 'teal';
+        } catch (e) {
+            // Fallback to default
+        }
+    }
+
     return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] animate-in fade-in duration-300">
-            <Loader size="md" text="Loading..." />
+        <div className="flex flex-col items-center justify-center min-h-[60vh] w-full animate-in fade-in duration-300">
+            <Loader size="md" variant={variant} />
         </div>
     );
 }

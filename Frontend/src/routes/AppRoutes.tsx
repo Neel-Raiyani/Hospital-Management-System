@@ -3,7 +3,7 @@ import { ProtectedRoute } from '../components/ProtectedRoute.tsx';
 import Layout from '../components/layout/Layout.tsx';
 import AdminLayout from '../components/layout/AdminLayout.tsx';
 import { ReceptionistLayout } from '../components/layout/ReceptionistLayout.tsx';
-import { lazyWithLoader } from '../components/ui/PageTransition.tsx';
+import { lazyWithLoader, PageLoader } from '../components/ui/PageTransition.tsx';
 
 // Lazy load pages with transition wrapper
 const LoginPage = lazyWithLoader(() => import('../pages/LoginPage.tsx'));
@@ -18,21 +18,17 @@ const LabDashboard = lazyWithLoader(() => import('../pages/lab/LabDashboard.tsx'
 const ReceptionistDashboard = lazyWithLoader(() => import('../pages/receptionist/ReceptionistDashboard.tsx'));
 const ReceptionistAppointments = lazyWithLoader(() => import('../pages/receptionist/ReceptionistAppointments.tsx'));
 const BookAppointment = lazyWithLoader(() => import('../pages/receptionist/BookAppointment.tsx'));
+const DoctorDirectory = lazyWithLoader(() => import('../pages/receptionist/DoctorDirectory.tsx'));
 const AppointmentList = lazyWithLoader(() => import('../pages/AppointmentList.tsx'));
 const PatientList = lazyWithLoader(() => import('../pages/receptionist/PatientList.tsx'));
 
 import { useAuth } from '../context/AuthContext.tsx';
-import { Loader } from '../components/ui/Loader.tsx';
 
 function ProfileRedirect() {
     const { user, isLoading } = useAuth();
 
     if (isLoading) {
-        return (
-            <div className="flex h-screen w-full items-center justify-center bg-gray-50/50">
-                <Loader size="lg" text="Authenticating..." />
-            </div>
-        );
+        return <PageLoader />;
     }
 
     if (user?.role === 'ADMIN') return <Navigate to="/admin/profile" replace />;
@@ -79,6 +75,7 @@ export function AppRoutes() {
                 <Route path="dashboard" element={<ReceptionistDashboard />} />
                 <Route path="appointments" element={<ReceptionistAppointments />} />
                 <Route path="patients" element={<PatientList />} />
+                <Route path="doctors" element={<DoctorDirectory />} />
                 <Route path="book-appointment" element={<BookAppointment />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="book" element={<Navigate to="/receptionist/book-appointment" replace />} />

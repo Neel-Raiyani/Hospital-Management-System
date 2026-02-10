@@ -36,7 +36,7 @@ const patientSchema = z.object({
 type PatientFormData = z.infer<typeof patientSchema>;
 
 interface PatientRegistrationFormProps {
-    onSuccess: (patientPhone: string) => void;
+    onSuccess: () => void;
     onCancel: () => void;
 }
 
@@ -51,6 +51,7 @@ const PatientRegistrationForm: React.FC<PatientRegistrationFormProps> = ({ onSuc
         formState: { errors },
         setValue,
         watch,
+        setError,
     } = useForm<PatientFormData>({
         resolver: zodResolver(patientSchema),
     });
@@ -75,10 +76,25 @@ const PatientRegistrationForm: React.FC<PatientRegistrationFormProps> = ({ onSuc
 
             await patientService.createPatient(formattedData);
             toast.success('Patient registered successfully!');
-            onSuccess(data.phone);
+            onSuccess();
         } catch (error: any) {
             console.error('Failed to register patient:', error);
-            toast.error(error.response?.data?.message || 'Failed to register patient. Please try again.');
+            const responseData = error.response?.data;
+
+            if (responseData?.errors && Array.isArray(responseData.errors)) {
+                // Handle field-specific validation errors from backend
+                responseData.errors.forEach((err: { field: string; message: string }) => {
+                    const fieldName = err.field as keyof PatientFormData;
+                    setError(fieldName, {
+                        type: 'server',
+                        message: err.message
+                    });
+                });
+                toast.error('Please correct the highlighted errors');
+            } else {
+                // Handle generic messages or fallback
+                toast.error(responseData?.message || 'Failed to register patient. Please try again.');
+            }
         } finally {
             setIsSubmitting(false);
         }

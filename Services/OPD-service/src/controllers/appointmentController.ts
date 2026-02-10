@@ -5,6 +5,9 @@ import logger from '@utils/logger.js';
 export const bookAppointment = async (req: Request, res: Response) => {
     try {
         const { patientId, doctorId, appointmentDate: requestedDate, paymentType, checkupFee } = req.body;
+        const receptionist = req.user?.userId as string;
+
+
 
         logger.info(`Book appointment request | patientId=${patientId} | doctorId=${doctorId} | date=${requestedDate || 'today'} | paymentType=${paymentType} | fee=${checkupFee}`);
 
@@ -85,6 +88,7 @@ export const bookAppointment = async (req: Request, res: Response) => {
                 tokenNumber: nextToken,
                 paymentType,
                 checkupFee: finalCheckupFee,
+                receptionistId: receptionist
             },
         });
 

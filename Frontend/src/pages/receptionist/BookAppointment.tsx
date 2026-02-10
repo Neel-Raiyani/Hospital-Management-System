@@ -184,7 +184,7 @@ const BookAppointment: React.FC = () => {
                                     className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all cursor-pointer ${isActive
                                         ? 'bg-teal-600 text-white shadow-sm'
                                         : isCompleted
-                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-400 hover:bg-emerald-100'
                                             : 'bg-gray-100 text-gray-400'
                                         }`}
                                 >
@@ -217,11 +217,11 @@ const BookAppointment: React.FC = () => {
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: 10 }}
                                 transition={{ duration: 0.2 }}
-                                className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full"
+                                className="bg-white rounded-lg border border-gray-300 shadow-sm overflow-hidden flex flex-col h-full"
                             >
-                                <div className="shrink-0 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                                <div className="shrink-0 px-6 py-4 border-b border-gray-300 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-teal-50 rounded-lg flex items-center justify-center border border-teal-100">
+                                        <div className="w-10 h-10 bg-teal-50 rounded-lg flex items-center justify-center border border-teal-300">
                                             <User className="w-5 h-5 text-teal-600" />
                                         </div>
                                         <div>
@@ -241,7 +241,7 @@ const BookAppointment: React.FC = () => {
                                         <input
                                             type="text"
                                             placeholder="Search by name, phone or patient ID..."
-                                            className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 focus:bg-white transition-all text-sm font-medium"
+                                            className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-300 rounded-xl outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 focus:bg-white transition-all text-sm font-medium"
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                         />
@@ -253,13 +253,13 @@ const BookAppointment: React.FC = () => {
                                     </div>
 
                                     {/* Patient List */}
-                                    <div className="flex-1 border border-gray-100 rounded-xl overflow-hidden flex flex-col min-h-0 bg-white">
+                                    <div className="flex-1 border border-gray-300 rounded-xl overflow-hidden flex flex-col min-h-0 bg-white">
                                         {isLoading && patients.length === 0 ? (
                                             <div className="flex-1 flex items-center justify-center p-12">
                                                 <Loader size="md" text="Searching..." />
                                             </div>
                                         ) : patients.length > 0 ? (
-                                            <div className="divide-y divide-gray-50 overflow-y-auto flex-1">
+                                            <div className="divide-y divide-gray-200 overflow-y-auto flex-1">
                                                 {patients.map((patient, index) => (
                                                     <motion.div
                                                         key={patient.id}
@@ -320,14 +320,14 @@ const BookAppointment: React.FC = () => {
                                                 <button
                                                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                                     disabled={currentPage === 1 || isLoading}
-                                                    className="p-1.5 rounded-md border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                                    className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                                                 >
                                                     <ChevronLeft className="w-4 h-4 text-gray-600" />
                                                 </button>
                                                 <button
                                                     onClick={() => setCurrentPage(prev => (prev * itemsPerPage < totalPatients ? prev + 1 : prev))}
                                                     disabled={currentPage * itemsPerPage >= totalPatients || isLoading}
-                                                    className="p-1.5 rounded-md border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                                    className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                                                 >
                                                     <ChevronRight className="w-4 h-4 text-gray-600" />
                                                 </button>
@@ -336,7 +336,7 @@ const BookAppointment: React.FC = () => {
                                     )}
                                 </div>
 
-                                <div className="shrink-0 px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                                <div className="shrink-0 px-6 py-4 bg-gray-50 border-t border-gray-300 flex justify-end">
                                     <button
                                         disabled={!selectedPatient}
                                         onClick={() => setStep(2)}
@@ -357,11 +357,11 @@ const BookAppointment: React.FC = () => {
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -10 }}
                                 transition={{ duration: 0.2 }}
-                                className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full"
+                                className="bg-white rounded-xl border border-gray-300 shadow-sm overflow-hidden flex flex-col h-full"
                             >
-                                <div className="shrink-0 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                                <div className="shrink-0 px-6 py-4 border-b border-gray-300 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-teal-50 rounded-lg flex items-center justify-center border border-teal-100">
+                                        <div className="w-10 h-10 bg-teal-50 rounded-lg flex items-center justify-center border border-teal-300">
                                             <Stethoscope className="w-5 h-5 text-teal-600" />
                                         </div>
                                         <div>
@@ -369,7 +369,7 @@ const BookAppointment: React.FC = () => {
                                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Choose an available doctor</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 text-[9px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-widest border border-emerald-100">
+                                    <div className="flex items-center gap-2 text-[9px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-widest border border-emerald-300">
                                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                                         {doctors.filter(d => isDoctorAvailable(d.opdStartTime, d.opdEndTime)).length} available
                                     </div>
@@ -387,8 +387,8 @@ const BookAppointment: React.FC = () => {
                                                     transition={{ delay: index * 0.04 }}
                                                     onClick={() => available && setSelectedDoctor(selectedDoctor?.id === doctor.id ? null : doctor)}
                                                     className={`relative p-4 rounded-lg border-2 transition-all ${available
-                                                        ? 'cursor-pointer hover:shadow-md border-emerald-200 bg-emerald-50/40 hover:border-emerald-300'
-                                                        : 'cursor-not-allowed border-gray-200 bg-gray-100/50'
+                                                        ? 'cursor-pointer hover:shadow-md border-emerald-400 bg-emerald-50/40 hover:border-emerald-500'
+                                                        : 'cursor-not-allowed border-gray-300 bg-gray-100/50'
                                                         } ${selectedDoctor?.id === doctor.id
                                                             ? 'border-teal-500 bg-teal-50'
                                                             : ''
@@ -444,7 +444,7 @@ const BookAppointment: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="shrink-0 px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                                <div className="shrink-0 px-6 py-4 bg-gray-50 border-t border-gray-300 flex items-center justify-between">
                                     <button
                                         onClick={() => setStep(1)}
                                         className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors"
@@ -468,8 +468,8 @@ const BookAppointment: React.FC = () => {
 
                 {/* Right Panel - Summary */}
                 <div className="lg:col-span-1 h-full overflow-hidden">
-                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm h-full flex flex-col">
-                        <div className="px-5 py-4 border-b border-gray-100">
+                    <div className="bg-white rounded-xl border border-gray-300 shadow-sm h-full flex flex-col">
+                        <div className="px-5 py-4 border-b border-gray-300">
                             <h3 className="font-bold text-[#111827] flex items-center gap-2">
                                 <Info className="w-4 h-4 text-teal-600" />
                                 Booking Summary
@@ -480,7 +480,7 @@ const BookAppointment: React.FC = () => {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Patient</label>
                                 {selectedPatient ? (
-                                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-300">
                                         <div className="w-9 h-9 bg-teal-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
                                             {selectedPatient.name[0].toUpperCase()}
                                         </div>
@@ -490,7 +490,7 @@ const BookAppointment: React.FC = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-center">
+                                    <div className="p-3 bg-gray-50 rounded-lg border border-dashed border-gray-300 text-center">
                                         <p className="text-xs text-gray-400">Select a patient</p>
                                     </div>
                                 )}
@@ -500,7 +500,7 @@ const BookAppointment: React.FC = () => {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Doctor</label>
                                 {selectedDoctor ? (
-                                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-300">
                                         <div className="w-9 h-9 bg-teal-600 rounded-lg flex items-center justify-center text-white font-semibold text-xs">
                                             Dr
                                         </div>
@@ -510,7 +510,7 @@ const BookAppointment: React.FC = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-center">
+                                    <div className="p-3 bg-gray-50 rounded-lg border border-dashed border-gray-300 text-center">
                                         <p className="text-xs text-gray-400">Select a doctor</p>
                                     </div>
                                 )}
@@ -520,7 +520,7 @@ const BookAppointment: React.FC = () => {
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date</label>
-                                    <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                    <div className="p-3 bg-gray-50 rounded-xl border border-gray-300">
                                         <div className="flex items-center gap-2 text-sm font-bold text-gray-800">
                                             <Calendar className="w-4 h-4 text-teal-600" />
                                             {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
@@ -529,7 +529,7 @@ const BookAppointment: React.FC = () => {
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fee</label>
-                                    <div className="p-3 bg-teal-50 rounded-xl border border-teal-100">
+                                    <div className="p-3 bg-teal-50 rounded-xl border border-teal-300">
                                         <p className="text-lg font-extrabold text-teal-700">
                                             ₹{selectedDoctor?.checkupFee || 0}
                                         </p>
@@ -543,7 +543,7 @@ const BookAppointment: React.FC = () => {
 
             {/* Confirmation Dialog */}
             <Dialog open={isConfirmModalOpen} onOpenChange={setIsConfirmModalOpen}>
-                <DialogContent className="sm:max-w-[460px] rounded-lg overflow-hidden p-0 border border-gray-200 shadow-xl">
+                <DialogContent className="sm:max-w-[460px] rounded-lg overflow-hidden p-0 border border-gray-300 shadow-xl">
                     <AnimatePresence mode="wait">
                         {!isSuccess ? (
                             <motion.div
@@ -553,7 +553,7 @@ const BookAppointment: React.FC = () => {
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 transition={{ duration: 0.2 }}
                             >
-                                <DialogHeader className="px-6 py-5 border-b border-gray-100 bg-gray-50">
+                                <DialogHeader className="px-6 py-5 border-b border-gray-300 bg-gray-50">
                                     <DialogTitle className="text-lg font-bold text-gray-900 flex items-center gap-3">
                                         <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
                                             <CheckCircle className="w-5 h-5 text-teal-600" />
@@ -568,7 +568,7 @@ const BookAppointment: React.FC = () => {
                                     })} className="p-6 space-y-5">
                                         {/* Summary */}
                                         <div className="space-y-3">
-                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-300">
                                                 <div className="w-9 h-9 bg-teal-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
                                                     {selectedPatient?.name[0].toUpperCase()}
                                                 </div>
@@ -578,7 +578,7 @@ const BookAppointment: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-300">
                                                 <div className="w-9 h-9 bg-teal-600 rounded-lg flex items-center justify-center text-white font-semibold text-xs">
                                                     Dr
                                                 </div>
@@ -589,13 +589,13 @@ const BookAppointment: React.FC = () => {
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-3">
-                                                <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                                <div className="p-3 bg-gray-50 rounded-lg border border-gray-300">
                                                     <p className="text-xs text-gray-400 font-medium">Date</p>
                                                     <p className="font-semibold text-gray-900 text-sm mt-0.5">
                                                         {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                                                     </p>
                                                 </div>
-                                                <div className="p-3 bg-teal-50 rounded-lg border border-teal-100">
+                                                <div className="p-3 bg-teal-50 rounded-lg border border-teal-300">
                                                     <p className="text-xs text-teal-600 font-medium">Fee</p>
                                                     <p className="font-bold text-teal-700 text-lg">₹{selectedDoctor?.checkupFee || 0}</p>
                                                 </div>
@@ -621,7 +621,7 @@ const BookAppointment: React.FC = () => {
                                                                 }}
                                                                 className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 transition-all ${field.value === 'CASH'
                                                                     ? 'border-teal-600 bg-teal-50 text-teal-700'
-                                                                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                                                    : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
                                                                     }`}
                                                             >
                                                                 <Hash className="w-4 h-4" />
@@ -635,7 +635,7 @@ const BookAppointment: React.FC = () => {
                                                                 }}
                                                                 className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 transition-all ${field.value === 'ONLINE'
                                                                     ? 'border-teal-600 bg-teal-50 text-teal-700'
-                                                                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                                                    : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
                                                                     }`}
                                                             >
                                                                 <Zap className="w-4 h-4" />
@@ -653,7 +653,7 @@ const BookAppointment: React.FC = () => {
                                                 type="button"
                                                 variant="outline"
                                                 onClick={() => setIsConfirmModalOpen(false)}
-                                                className="flex-1 h-11 rounded-lg border-gray-200 font-semibold text-sm"
+                                                className="flex-1 h-11 rounded-lg border-gray-300 font-semibold text-sm"
                                             >
                                                 Cancel
                                             </Button>
@@ -692,11 +692,11 @@ const BookAppointment: React.FC = () => {
                                     <CheckCircle className="w-8 h-8 text-emerald-600" />
                                 </motion.div>
                                 <h2 className="text-xl font-bold text-gray-900 mb-2">Booking Successful!</h2>
-                                <div className="inline-flex items-center px-4 py-2 bg-teal-50 rounded-lg border border-teal-100 mb-6">
+                                <div className="inline-flex items-center px-4 py-2 bg-teal-50 rounded-lg border border-teal-300 mb-6">
                                     <span className="text-teal-700 font-bold">Token: #{bookingDetails?.tokenNumber || '---'}</span>
                                 </div>
 
-                                <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-100 space-y-3 text-left">
+                                <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-300 space-y-3 text-left">
                                     <div className="flex justify-between items-center text-sm">
                                         <span className="text-gray-500">Patient</span>
                                         <span className="font-semibold text-gray-900">{selectedPatient?.name}</span>
@@ -717,7 +717,7 @@ const BookAppointment: React.FC = () => {
                                     <Button
                                         variant="outline"
                                         onClick={() => navigate('/receptionist/appointments')}
-                                        className="h-11 rounded-lg border-gray-200 font-semibold text-sm"
+                                        className="h-11 rounded-lg border-gray-300 font-semibold text-sm"
                                     >
                                         View List
                                     </Button>

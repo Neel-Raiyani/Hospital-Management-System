@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import { authService } from '../api/auth.service';
 import { getUserFromToken, isTokenExpired } from '../utils/jwt';
@@ -30,30 +30,23 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [token, setToken] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    // ... (useEffect and login/logout remain same, just ensure type compatibility) ...
-    // Initialize auth state from localStorage on mount
-    useEffect(() => {
+    const [token, setToken] = useState<string | null>(() => {
         const storedToken = localStorage.getItem('token');
-
         if (storedToken && !isTokenExpired(storedToken)) {
-            const userData = getUserFromToken(storedToken);
-            // Force re-login if token is old and doesn't have name field
-            if (userData && userData.name !== 'Staff Member') {
-                setToken(storedToken);
-                setUser(userData);
-            } else {
-                localStorage.removeItem('token');
-            }
-        } else {
-            localStorage.removeItem('token');
+            return storedToken;
         }
+        return null;
+    });
 
-        setIsLoading(false);
-    }, []);
+    const [user, setUser] = useState<User | null>(() => {
+        const storedToken = localStorage.getItem('token');
+        if (storedToken && !isTokenExpired(storedToken)) {
+            return getUserFromToken(storedToken);
+        }
+        return null;
+    });
+
+    const [isLoading] = useState(false);
 
     const login = async (credentials: LoginCredentials) => {
         try {

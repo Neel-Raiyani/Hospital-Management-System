@@ -44,7 +44,7 @@ export const Loader: React.FC<LoaderProps> = ({
     const config = sizeMap[size];
 
     return (
-        <div className={`flex flex-col items-center justify-center ${className}`}>
+        <div className={`inline-flex flex-col items-center justify-center ${className}`}>
             <div className={`relative ${config.box}`}>
                 {/* Background Ring */}
                 <div className={`absolute inset-0 ${config.border} rounded-full border-gray-100/80`} />

@@ -220,7 +220,15 @@ const ReceptionistDashboard: React.FC = () => {
             </div>
 
             {/* Daily OPD Queue */}
-            <DailyOPDQueue appointments={appointments} loading={loading} />
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[400px]">
+                {loading ? (
+                    <div className="py-32 flex flex-col items-center justify-center">
+                        <Loader size="md" text="Loading Queue Data..." variant="teal" />
+                    </div>
+                ) : (
+                    <DailyOPDQueue appointments={appointments} loading={loading} />
+                )}
+            </div>
 
             {/* Patient Search Modal */}
             <Dialog open={showPatientSearch} onOpenChange={setShowPatientSearch}>

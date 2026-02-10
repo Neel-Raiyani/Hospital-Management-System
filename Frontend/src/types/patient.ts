@@ -9,6 +9,7 @@ export interface Patient {
     phone: string;
     emergencyContact: string;
     medicalHistory?: string;
+    receptionistId: string;
     isActive: boolean;
     createdAt: string;
     updatedAt: string;

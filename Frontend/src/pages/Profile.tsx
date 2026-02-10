@@ -98,11 +98,11 @@ const Profile: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh]">
+            <div className="flex flex-col items-center justify-center min-h-[60vh] w-full">
                 <Loader
                     size="md"
                     variant={currentUser?.role === 'RECEPTIONIST' ? 'teal' : 'blue'}
-                    text="Loading security context..."
+                    text="Loading..."
                 />
             </div>
         );

@@ -5,8 +5,19 @@ import logger from '@utils/logger.js';
 export const createPatient = async (req: Request, res: Response) => {
     try {
         const { name, dateOfBirth, gender, phone, emergencyContact, medicalHistory } = req.body;
+        const receptionist = req.user?.userId as string;
 
         logger.info('Create patient request received');
+
+        // Check if patient with same phone already exists
+        const existingPatient = await prisma.patient.findFirst({
+            where: { phone, isActive: true }
+        });
+
+        if (existingPatient) {
+            logger.warn(`Create patient failed | phone ${phone} already exists`);
+            return res.status(400).json({ message: "A patient with this phone number already exists" });
+        }
 
         const counter = await prisma.counter.update({
             where: { name: "patient" },
@@ -23,7 +34,8 @@ export const createPatient = async (req: Request, res: Response) => {
                 gender,
                 phone,
                 emergencyContact,
-                medicalHistory
+                medicalHistory,
+                receptionistId: receptionist
             },
             select: {
                 name: true,
@@ -31,7 +43,9 @@ export const createPatient = async (req: Request, res: Response) => {
                 gender: true,
                 phone: true,
                 emergencyContact: true,
-                medicalHistory: true
+                medicalHistory: true,
+                patientId: true,
+                receptionistId: true
             }
         });
 
@@ -41,7 +55,7 @@ export const createPatient = async (req: Request, res: Response) => {
     } catch (error) {
         logger.error(`Create patient failed | error=${(error as Error).message}`);
 
-        res.status(500).json({ messgae: "Patient can't be added due to internal server error" })
+        res.status(500).json({ message: "Patient can't be added due to internal server error" })
     }
 }
 
