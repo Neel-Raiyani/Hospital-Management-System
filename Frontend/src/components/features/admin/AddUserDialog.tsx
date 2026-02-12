@@ -1,20 +1,18 @@
 import React, { useState } from 'react';
 import {
-    UserPlus, CheckCircle, Copy, ShieldCheck,
-    UserIcon, Mail, Phone, GraduationCap, Clock, Stethoscope, History, Loader2
+    Plus, UserPlus, CheckCircle, Copy, Check, Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { authService, type CreateUserRequest, type CreateUserResponse } from '../../../api/auth.service';
-import { cn } from '../../../utils/cn';
+import { authService, type CreateUserRequest, type CreateUserResponse, type StaffUser } from '../../../api/auth.service';
+import { toast } from 'react-hot-toast';
 
 // UI Components
-import { Button } from '../../ui/Button';
 import { Input } from '../../ui/Input';
 import {
-    Dialog, DialogContent, DialogDescription,
+    Dialog, DialogContent,
     DialogHeader, DialogTitle, DialogTrigger
 } from '../../ui/Dialog';
 import {
@@ -38,7 +36,7 @@ import {
 const formSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
     email: z.string().email("Invalid email address"),
-    role: z.enum(['DOCTOR', 'RECEPTIONIST', 'LAB']),
+    role: z.enum(['DOCTOR', 'RECEPTIONIST', 'LAB', 'ADMIN']),
     specialization: z.string().optional(),
     qualification: z.string().optional(),
     experienceYears: z.coerce.number().min(0).optional(),
@@ -65,10 +63,23 @@ type FormValues = z.infer<typeof formSchema>;
 interface AddUserDialogProps {
     onSuccess?: () => void;
     trigger?: React.ReactNode;
+    userToEdit?: StaffUser;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
-export const AddUserDialog: React.FC<AddUserDialogProps> = ({ onSuccess, trigger }) => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
+export const AddUserDialog: React.FC<AddUserDialogProps> = ({
+    onSuccess,
+    trigger,
+    userToEdit,
+    open: externalOpen,
+    onOpenChange: onExternalOpenChange
+}) => {
+    const [internalOpen, setInternalOpen] = useState(false);
+    const isModalOpen = externalOpen !== undefined ? externalOpen : internalOpen;
+    const setIsModalOpen = onExternalOpenChange || setInternalOpen;
+
+    const isEditMode = !!userToEdit;
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
     const [copiedField, setCopiedField] = useState<'email' | 'password' | null>(null);
@@ -93,6 +104,25 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({ onSuccess, trigger
 
     const selectedRole = form.watch('role');
 
+    // Populate form for Edit Mode
+    React.useEffect(() => {
+        if (userToEdit && isModalOpen) {
+            form.reset({
+                name: userToEdit.name,
+                email: userToEdit.email,
+                role: (userToEdit.role as any) || 'DOCTOR',
+                specialization: userToEdit.specialization || '',
+                qualification: userToEdit.qualification || '',
+                experienceYears: userToEdit.experienceYears || 0,
+                opdStartTime: userToEdit.opdStartTime || '09:00',
+                opdEndTime: userToEdit.opdEndTime || '17:00',
+                checkupFee: userToEdit.checkupFee ?? 0,
+                phone: userToEdit.phone || '',
+                shift: (userToEdit as any).shift || 'MORNING',
+            });
+        }
+    }, [userToEdit, isModalOpen, form]);
+
     const resetForm = () => {
         form.reset({
             name: '',
@@ -112,12 +142,8 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({ onSuccess, trigger
 
     const handleModalOpenChange = (open: boolean) => {
         if (!open) {
-            if (form.formState.isDirty && !createdCredentials) {
-                setIsDiscardConfirmOpen(true);
-            } else {
-                resetForm();
-                setIsModalOpen(false);
-            }
+            resetForm();
+            setIsModalOpen(false);
         } else {
             setIsModalOpen(true);
         }
@@ -148,20 +174,28 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({ onSuccess, trigger
                 } : undefined,
             };
 
-            const response: CreateUserResponse = await authService.createUser(request);
-            setCreatedCredentials(response.Credentials);
+            if (isEditMode && userToEdit) {
+                await authService.updateUser(userToEdit.id, request);
+                toast.success('Staff profile updated successfully');
+                setIsModalOpen(false);
+                resetForm();
+            } else {
+                const response: CreateUserResponse = await authService.createUser(request);
+                setCreatedCredentials(response.Credentials);
+                toast.success('New staff member added successfully');
+            }
             onSuccess?.();
         } catch (error: any) {
-            console.error('Create User Error:', error);
+            console.error(isEditMode ? 'Update User Error:' : 'Create User Error:', error);
             const serverErrors = error.response?.data?.errors;
             const serverMessage = error.response?.data?.message;
-            let displayError = 'Failed to create user';
+            let displayError = isEditMode ? 'Failed to update user' : 'Failed to create user';
             if (Array.isArray(serverErrors) && serverErrors.length > 0) {
                 displayError = `Validation Error: ${serverErrors.map((e: any) => e.message).join(', ')}`;
             } else if (serverMessage) {
                 displayError = serverMessage;
             }
-            alert(displayError);
+            toast.error(displayError);
         } finally {
             setIsSubmitting(false);
         }
@@ -176,181 +210,207 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({ onSuccess, trigger
     return (
         <>
             <Dialog open={isModalOpen} onOpenChange={handleModalOpenChange}>
-                <DialogTrigger asChild>
-                    {trigger || (
-                        <Button className="h-11 px-6 bg-[#769FCD] hover:bg-[#608FBF] shadow-md">
-                            <UserPlus className="w-4 h-4 mr-2" />
-                            Add User
-                        </Button>
-                    )}
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[700px] overflow-hidden p-0 rounded-2xl border-none shadow-2xl">
-                    <DialogHeader className="relative p-8 bg-[#F7FBFC] overflow-hidden">
-                        <div className="absolute top-0 right-0 p-8 opacity-5">
-                            <UserPlus size={120} />
-                        </div>
-                        <div className="flex items-center gap-4 relative z-10">
-                            <div className="w-12 h-12 bg-[#769FCD] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#769FCD]/20">
-                                <UserPlus size={24} />
-                            </div>
-                            <div>
-                                <DialogTitle className="text-2xl font-bold text-[#091E42]">Add New User</DialogTitle>
-                                <DialogDescription className="text-[#64748B] mt-1 text-sm">Create a new staff account with specific roles and professional details.</DialogDescription>
-                            </div>
-                        </div>
-                    </DialogHeader>
-
-                    {createdCredentials ? (
-                        <div className="p-12">
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="max-w-md mx-auto text-center"
-                            >
-                                <div className="w-16 h-16 bg-[#F0FAF5] text-[#10B981] rounded-2xl flex items-center justify-center mx-auto mb-6">
-                                    <CheckCircle size={32} />
+                {trigger && (
+                    <DialogTrigger asChild>
+                        {trigger}
+                    </DialogTrigger>
+                )}
+                <DialogContent className="sm:max-w-[650px] w-full max-h-[90vh] rounded-lg p-0 border-none shadow-2xl bg-transparent [&>button]:hidden flex flex-col">
+                    <div className="bg-white rounded-lg overflow-hidden flex flex-col h-full font-['Inter',sans-serif]">
+                        {/* Fixed Header */}
+                        <DialogHeader className="p-6 border-b border-gray-100/80 bg-white shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-sm">
+                                    <UserPlus className="w-5 h-5 text-indigo-600" />
                                 </div>
-                                <h3 className="text-2xl font-bold text-[#1E293B]">Account Created Successfully</h3>
-                                <p className="text-[#64748B] mt-2">The new staff member can now log in using the credentials below.</p>
-
-                                <div className="mt-10 space-y-3 text-left">
-                                    <div className="p-4 rounded-xl bg-[#D6E6F2] border border-[#B9D7EA] flex items-center justify-between group">
-                                        <div className="flex-1 min-w-0 pr-4">
-                                            <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mb-1">Email Address</p>
-                                            <p className="font-mono text-[15px] font-semibold text-[#1E293B] truncate">{createdCredentials.email}</p>
-                                        </div>
-                                        <Button
-                                            size="icon"
-                                            variant="ghost"
-                                            onClick={() => handleCopy('email', createdCredentials.email)}
-                                            className={cn("h-10 w-10 shrink-0 rounded-lg transition-colors", copiedField === 'email' ? 'text-[#10B981] bg-green-50' : 'text-[#64748B] hover:bg-white hover:shadow-sm')}
-                                        >
-                                            {copiedField === 'email' ? <CheckCircle size={18} /> : <Copy size={18} />}
-                                        </Button>
-                                    </div>
-
-                                    <div className="p-4 rounded-xl bg-[#D6E6F2] border border-[#B9D7EA] flex items-center justify-between group">
-                                        <div className="flex-1 min-w-0 pr-4">
-                                            <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mb-1">Initial Password</p>
-                                            <p className="font-mono text-[15px] font-bold text-[#769FCD] truncate">{createdCredentials.password}</p>
-                                        </div>
-                                        <Button
-                                            size="icon"
-                                            variant="ghost"
-                                            onClick={() => handleCopy('password', createdCredentials.password)}
-                                            className={cn("h-10 w-10 shrink-0 rounded-lg transition-colors", copiedField === 'password' ? 'text-[#10B981] bg-green-50' : 'text-[#64748B] hover:bg-white hover:shadow-sm')}
-                                        >
-                                            {copiedField === 'password' ? <CheckCircle size={18} /> : <Copy size={18} />}
-                                        </Button>
-                                    </div>
+                                <div>
+                                    <DialogTitle className="text-xl font-bold text-gray-900 tracking-tight">
+                                        {isEditMode ? 'Edit Staff Profile' : 'Add New Staff'}
+                                    </DialogTitle>
+                                    <p className="text-xs text-gray-500 font-medium mt-0.5">
+                                        {isEditMode ? `Updating details for ${userToEdit?.name}` : 'Create a new hospital staff account'}
+                                    </p>
                                 </div>
+                            </div>
+                        </DialogHeader>
 
-                                <Button
-                                    className="w-full mt-10 h-12 rounded-xl bg-[#1E293B] hover:bg-[#0F172A] text-white font-bold transition-all"
-                                    onClick={() => {
-                                        resetForm();
-                                        setIsModalOpen(false);
-                                    }}
-                                >
-                                    Continue to Staff List
-                                </Button>
-                            </motion.div>
-                        </div>
-                    ) : (
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col max-h-[75vh]">
-                                <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
-                                    <div className="space-y-6">
-                                        <div className="flex items-center gap-2 pb-2 border-b border-[#B9D7EA] mb-6">
-                                            <div className="w-1 h-6 bg-[#769FCD] rounded-full" />
-                                            <h4 className="text-sm font-bold text-[#475569] uppercase tracking-widest">Personal Identification</h4>
+                        {/* Scrollable Content area */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6 bg-gray-50/30">
+                            <div className="space-y-6">
+                                {createdCredentials ? (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className="text-center py-8"
+                                    >
+                                        <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center mx-auto mb-6 shadow-sm border border-emerald-100">
+                                            <Check size={32} />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-gray-900 mb-2">Registration Successful</h3>
+                                        <p className="text-sm text-gray-500 font-medium mb-8">Access account created. Please save credentials safely.</p>
+
+                                        <div className="bg-white rounded-lg p-5 border border-gray-200 text-left space-y-4 max-w-sm mx-auto shadow-sm">
+                                            <div className="space-y-1.5">
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Login Email</p>
+                                                <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 group">
+                                                    <code className="text-sm font-bold text-indigo-700">{createdCredentials?.email}</code>
+                                                    <button
+                                                        onClick={() => handleCopy('email', createdCredentials?.email || '')}
+                                                        className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-gray-400 hover:text-indigo-600 transition-all"
+                                                    >
+                                                        {copiedField === 'email' ? <CheckCircle size={16} className="text-emerald-600" /> : <Copy size={16} />}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Initial Password</p>
+                                                <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
+                                                    <code className="text-sm font-bold text-emerald-700">{createdCredentials?.password}</code>
+                                                    <button
+                                                        onClick={() => handleCopy('password', createdCredentials?.password || '')}
+                                                        className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-gray-400 hover:text-emerald-600 transition-all"
+                                                    >
+                                                        {copiedField === 'password' ? <CheckCircle size={16} className="text-emerald-600" /> : <Copy size={16} />}
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        <FormField
-                                            control={form.control}
-                                            name="role"
-                                            render={({ field }) => (
-                                                <FormItem className="space-y-3">
-                                                    <FormLabel className="flex items-center gap-2 text-[#475569] font-bold">
-                                                        <ShieldCheck size={14} className="text-[#769FCD]" />
-                                                        Staff Role
-                                                    </FormLabel>
-                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                        <FormControl>
-                                                            <SelectTrigger className="h-12 border-[#B9D7EA] rounded-xl focus:ring-4 focus:ring-[#769FCD]/10 focus:border-[#769FCD] transition-all outline-none">
-                                                                <SelectValue placeholder="Select staff role" />
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent className="rounded-xl border-[#B9D7EA] shadow-xl">
-                                                            <SelectItem value="DOCTOR" className="rounded-lg py-3">Doctor</SelectItem>
-                                                            <SelectItem value="RECEPTIONIST" className="rounded-lg py-3">Receptionist</SelectItem>
-                                                            <SelectItem value="LAB" className="rounded-lg py-3">Lab Staff</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
+                                        <button
+                                            onClick={() => {
+                                                resetForm();
+                                                setIsModalOpen(false);
+                                            }}
+                                            className="mt-10 w-full sm:w-48 bg-gray-900 hover:bg-black text-white font-bold text-xs uppercase tracking-widest h-11 rounded-lg shadow-lg active:scale-95 transition-all"
+                                        >
+                                            Done & Close
+                                        </button>
+                                    </motion.div>
+                                ) : (
+                                    <Form {...form}>
+                                        <form id="add-staff-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                                            {/* Basic Information Section */}
+                                            <div className="space-y-5">
+                                                <div className="flex items-center gap-2 mb-1 px-1">
+                                                    <div className="w-1 h-3.5 bg-indigo-500 rounded-full" />
+                                                    <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Basic Information</h4>
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="name"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel className="text-xs font-bold text-gray-800 mb-1.5 uppercase tracking-wider ml-1">Full Name</FormLabel>
+                                                                <FormControl>
+                                                                    <div className="relative group/input">
+                                                                        <UserPlus className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within/input:text-indigo-500 transition-colors" />
+                                                                        <Input
+                                                                            placeholder="John Doe"
+                                                                            {...field}
+                                                                            className="w-full pl-10 pr-3 py-2.5 bg-gray-50/50 border border-gray-200 rounded-lg outline-none focus:ring-[5px] focus:ring-indigo-500/10 focus:border-indigo-600 focus:bg-white hover:bg-white hover:border-gray-300 transition-all text-sm font-medium h-11 shadow-sm"
+                                                                        />
+                                                                    </div>
+                                                                </FormControl>
+                                                                <FormMessage className="text-[10px] font-bold" />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="email"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel className="text-xs font-bold text-gray-800 mb-1.5 uppercase tracking-wider ml-1">Email Address</FormLabel>
+                                                                <FormControl>
+                                                                    <div className="relative group/input">
+                                                                        <Plus className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 rotate-45 group-focus-within/input:text-indigo-500 transition-colors" />
+                                                                        <Input
+                                                                            placeholder="john@hospital.com"
+                                                                            {...field}
+                                                                            className="w-full pl-10 pr-3 py-2.5 bg-gray-50/50 border border-gray-200 rounded-lg outline-none focus:ring-[5px] focus:ring-indigo-500/10 focus:border-indigo-600 focus:bg-white hover:bg-white hover:border-gray-300 transition-all text-sm font-medium h-11 shadow-sm"
+                                                                        />
+                                                                    </div>
+                                                                </FormControl>
+                                                                <FormMessage className="text-[10px] font-bold" />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <FormField
-                                                control={form.control}
-                                                name="name"
-                                                render={({ field }) => (
-                                                    <FormItem className="space-y-3">
-                                                        <FormLabel className="flex items-center gap-2 text-[#475569] font-bold">
-                                                            <UserIcon size={14} className="text-[#769FCD]" />
-                                                            Full Name
-                                                        </FormLabel>
-                                                        <FormControl>
-                                                            <Input placeholder="Enter full name" className="h-12 border-[#B9D7EA] rounded-xl focus-visible:ring-4 focus-visible:ring-[#769FCD]/10 focus-visible:border-[#769FCD] transition-all outline-none" {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={form.control}
-                                                name="email"
-                                                render={({ field }) => (
-                                                    <FormItem className="space-y-3">
-                                                        <FormLabel className="flex items-center gap-2 text-[#475569] font-bold">
-                                                            <Mail size={14} className="text-[#769FCD]" />
-                                                            Email Address
-                                                        </FormLabel>
-                                                        <FormControl>
-                                                            <Input type="email" placeholder="example@hospital.com" className="h-12 border-[#B9D7EA] rounded-xl focus-visible:ring-4 focus-visible:ring-[#769FCD]/10 focus-visible:border-[#769FCD] transition-all outline-none" {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                    </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                                    {/* Hide role selector for ADMIN users in edit mode */}
+                                                    {!(isEditMode && userToEdit?.role === 'ADMIN') && (
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="role"
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel className="text-xs font-bold text-gray-800 mb-1.5 uppercase tracking-wider ml-1">User Role</FormLabel>
+                                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                        <FormControl>
+                                                                            <SelectTrigger
+                                                                                disabled={isEditMode}
+                                                                                className="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-lg outline-none focus:ring-[5px] focus:ring-indigo-500/10 focus:border-indigo-600 focus:bg-white hover:bg-white hover:border-gray-300 transition-all text-sm font-medium h-11 shadow-sm disabled:opacity-80"
+                                                                            >
+                                                                                <SelectValue placeholder="Select a role" />
+                                                                            </SelectTrigger>
+                                                                        </FormControl>
+                                                                        <SelectContent className="rounded-lg border-gray-200 shadow-2xl overflow-hidden py-1">
+                                                                            <SelectItem value="DOCTOR" className="font-semibold py-3 focus:bg-indigo-50 focus:text-indigo-700 cursor-pointer text-sm">Doctor</SelectItem>
+                                                                            <SelectItem value="RECEPTIONIST" className="font-semibold py-3 focus:bg-indigo-50 focus:text-indigo-700 cursor-pointer text-sm">Receptionist</SelectItem>
+                                                                            <SelectItem value="LAB" className="font-semibold py-3 focus:bg-indigo-50 focus:text-indigo-700 cursor-pointer text-sm">Lab Staff</SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
+                                                                    <FormMessage className="text-[10px] font-bold" />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    )}
+                                                    {(selectedRole === 'LAB' || selectedRole === 'RECEPTIONIST') && (
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="phone"
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel className="text-xs font-bold text-gray-800 mb-1.5 uppercase tracking-wider ml-1">Phone Number</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            placeholder="+91 XXXXX XXXXX"
+                                                                            {...field}
+                                                                            className="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-lg outline-none focus:ring-[5px] focus:ring-indigo-500/10 focus:border-indigo-600 focus:bg-white hover:bg-white hover:border-gray-300 transition-all text-sm font-medium h-11 shadow-sm"
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage className="text-[10px] font-bold" />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    )}
+                                                </div>
+                                            </div>
 
-                                    <div className="space-y-6">
-                                        <div className="flex items-center gap-2 pb-2 border-b border-[#B9D7EA] mb-6 mt-4">
-                                            <div className="w-1 h-6 bg-blue-500 rounded-full" />
-                                            <h4 className="text-sm font-bold text-[#475569] uppercase tracking-widest">Professional Assignment</h4>
-                                        </div>
-
-                                        <div className="rounded-2xl bg-[#D6E6F2]/50 p-6 border border-[#B9D7EA]">
+                                            {/* Role Specific Details */}
                                             {selectedRole === 'DOCTOR' && (
-                                                <div className="space-y-6">
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="space-y-5 pt-2">
+                                                    <div className="flex items-center gap-2 mb-1 px-1">
+                                                        <div className="w-1 h-3.5 bg-indigo-400 rounded-full" />
+                                                        <h4 className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Medical Credentials</h4>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                                         <FormField
                                                             control={form.control}
                                                             name="specialization"
                                                             render={({ field }) => (
-                                                                <FormItem className="space-y-3">
-                                                                    <FormLabel className="flex items-center gap-2 text-[#475569] font-bold">
-                                                                        <Stethoscope size={14} className="text-[#769FCD]" />
-                                                                        Specialization
-                                                                    </FormLabel>
+                                                                <FormItem>
+                                                                    <FormLabel className="text-xs font-bold text-gray-800 mb-1.5 uppercase tracking-wider ml-1">Specialization</FormLabel>
                                                                     <FormControl>
-                                                                        <Input placeholder="e.g. Cardiology" className="h-12 border-white bg-white rounded-xl shadow-sm focus-visible:ring-4 focus-visible:ring-[#769FCD]/10 focus-visible:border-[#769FCD] transition-all outline-none" {...field} />
+                                                                        <Input
+                                                                            placeholder="e.g. Cardiology"
+                                                                            {...field}
+                                                                            className="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-lg outline-none focus:ring-[5px] focus:ring-indigo-500/10 focus:border-indigo-600 focus:bg-white hover:bg-white hover:border-gray-300 transition-all text-sm font-medium h-11 shadow-sm"
+                                                                        />
                                                                     </FormControl>
-                                                                    <FormMessage />
+                                                                    <FormMessage className="text-[10px] font-bold" />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -358,51 +418,71 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({ onSuccess, trigger
                                                             control={form.control}
                                                             name="qualification"
                                                             render={({ field }) => (
-                                                                <FormItem className="space-y-3">
-                                                                    <FormLabel className="flex items-center gap-2 text-[#475569] font-bold">
-                                                                        <GraduationCap size={14} className="text-[#769FCD]" />
-                                                                        Qualification
-                                                                    </FormLabel>
+                                                                <FormItem>
+                                                                    <FormLabel className="text-xs font-bold text-gray-800 mb-1.5 uppercase tracking-wider ml-1">Qualification</FormLabel>
                                                                     <FormControl>
-                                                                        <Input placeholder="e.g. MBBS, MD" className="h-12 border-white bg-white rounded-xl shadow-sm focus-visible:ring-4 focus-visible:ring-[#769FCD]/10 focus-visible:border-[#769FCD] transition-all outline-none" {...field} />
+                                                                        <Input
+                                                                            placeholder="e.g. MBBS, MD"
+                                                                            {...field}
+                                                                            className="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-lg outline-none focus:ring-[5px] focus:ring-indigo-500/10 focus:border-indigo-600 focus:bg-white hover:bg-white hover:border-gray-300 transition-all text-sm font-medium h-11 shadow-sm"
+                                                                        />
                                                                     </FormControl>
-                                                                    <FormMessage />
+                                                                    <FormMessage className="text-[10px] font-bold" />
                                                                 </FormItem>
                                                             )}
                                                         />
                                                     </div>
-
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="experienceYears"
-                                                        render={({ field }) => (
-                                                            <FormItem className="space-y-3">
-                                                                <FormLabel className="flex items-center gap-2 text-[#475569] font-bold">
-                                                                    <History size={14} className="text-[#769FCD]" />
-                                                                    Years of Experience
-                                                                </FormLabel>
-                                                                <FormControl>
-                                                                    <Input type="number" min="0" className="h-12 border-white bg-white rounded-xl shadow-sm focus-visible:ring-4 focus-visible:ring-[#769FCD]/10 focus-visible:border-[#769FCD] transition-all outline-none" {...field} />
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
-
-                                                    <div className="grid grid-cols-2 gap-6">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="experienceYears"
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel className="text-[10px] font-black text-gray-700 uppercase tracking-widest ml-1">Years of Experience</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            type="number"
+                                                                            {...field}
+                                                                            className="w-full px-3.5 bg-white border border-gray-200 rounded-lg outline-none focus:ring-[5px] focus:ring-indigo-500/10 focus:border-indigo-600 h-11 text-sm font-semibold transition-all shadow-sm"
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage className="text-[10px] font-bold" />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="checkupFee"
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel className="text-[10px] font-black text-gray-700 uppercase tracking-widest ml-1">Checkup Fee (₹)</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            type="number"
+                                                                            {...field}
+                                                                            className="w-full px-3.5 bg-white border border-gray-200 rounded-lg outline-none focus:ring-[5px] focus:ring-indigo-500/10 focus:border-indigo-600 h-11 text-sm font-semibold transition-all font-mono shadow-sm"
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage className="text-[10px] font-bold" />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-5">
                                                         <FormField
                                                             control={form.control}
                                                             name="opdStartTime"
                                                             render={({ field }) => (
-                                                                <FormItem className="space-y-3">
-                                                                    <FormLabel className="flex items-center gap-2 text-[#475569] font-bold">
-                                                                        <Clock size={14} className="text-[#769FCD]" />
-                                                                        Shift Start
-                                                                    </FormLabel>
+                                                                <FormItem>
+                                                                    <FormLabel className="text-[10px] font-black text-gray-700 uppercase tracking-widest ml-1">OPD Start</FormLabel>
                                                                     <FormControl>
-                                                                        <Input type="time" className="h-12 border-white bg-white rounded-xl shadow-sm focus-visible:ring-4 focus-visible:ring-[#769FCD]/10 focus-visible:border-[#769FCD] transition-all outline-none" {...field} />
+                                                                        <Input
+                                                                            type="time"
+                                                                            {...field}
+                                                                            className="w-full px-3.5 bg-white border border-gray-200 rounded-lg outline-none focus:ring-[5px] focus:ring-indigo-500/10 focus:border-indigo-600 h-11 text-sm font-semibold transition-all shadow-sm"
+                                                                        />
                                                                     </FormControl>
-                                                                    <FormMessage />
+                                                                    <FormMessage className="text-[10px] font-bold" />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -410,120 +490,98 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({ onSuccess, trigger
                                                             control={form.control}
                                                             name="opdEndTime"
                                                             render={({ field }) => (
-                                                                <FormItem className="space-y-3">
-                                                                    <FormLabel className="flex items-center gap-2 text-[#475569] font-bold">
-                                                                        <Clock size={14} className="text-[#769FCD]" />
-                                                                        Shift End
-                                                                    </FormLabel>
+                                                                <FormItem>
+                                                                    <FormLabel className="text-[10px] font-black text-gray-700 uppercase tracking-widest ml-1">OPD End</FormLabel>
                                                                     <FormControl>
-                                                                        <Input type="time" className="h-12 border-white bg-white rounded-xl shadow-sm focus-visible:ring-4 focus-visible:ring-[#769FCD]/10 focus-visible:border-[#769FCD] transition-all outline-none" {...field} />
+                                                                        <Input
+                                                                            type="time"
+                                                                            {...field}
+                                                                            className="w-full px-3.5 bg-white border border-gray-200 rounded-lg outline-none focus:ring-[5px] focus:ring-indigo-500/10 focus:border-indigo-600 h-11 text-sm font-semibold transition-all shadow-sm"
+                                                                        />
                                                                     </FormControl>
-                                                                    <FormMessage />
+                                                                    <FormMessage className="text-[10px] font-bold" />
                                                                 </FormItem>
                                                             )}
                                                         />
                                                     </div>
-
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="checkupFee"
-                                                        render={({ field }) => (
-                                                            <FormItem className="space-y-3">
-                                                                <FormLabel className="flex items-center gap-2 text-[#475569] font-bold">
-                                                                    <ShieldCheck size={14} className="text-[#769FCD]" />
-                                                                    Checkup Fee (₹)
-                                                                </FormLabel>
-                                                                <FormControl>
-                                                                    <Input type="number" min="0" placeholder="e.g. 500" className="h-12 border-white bg-white rounded-xl shadow-sm focus-visible:ring-4 focus-visible:ring-[#769FCD]/10 focus-visible:border-[#769FCD] transition-all outline-none" {...field} />
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
                                                 </div>
                                             )}
 
                                             {(selectedRole === 'RECEPTIONIST' || selectedRole === 'LAB') && (
-                                                <div className="space-y-6">
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="phone"
-                                                        render={({ field }) => (
-                                                            <FormItem className="space-y-3">
-                                                                <FormLabel className="flex items-center gap-2 text-[#475569] font-bold">
-                                                                    <Phone size={14} className="text-[#769FCD]" />
-                                                                    Phone Number
-                                                                </FormLabel>
-                                                                <FormControl>
-                                                                    <Input placeholder="+91 XXXXX XXXXX" className="h-12 border-white bg-white rounded-xl shadow-sm focus-visible:ring-4 focus-visible:ring-[#769FCD]/10 focus-visible:border-[#769FCD] transition-all outline-none" {...field} />
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
+                                                <div className="space-y-5 pt-2">
+                                                    <div className="flex items-center gap-2 mb-1 px-1">
+                                                        <div className="w-1 h-3.5 bg-indigo-400 rounded-full" />
+                                                        <h4 className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Assignment Details</h4>
+                                                    </div>
                                                     <FormField
                                                         control={form.control}
                                                         name="shift"
                                                         render={({ field }) => (
-                                                            <FormItem className="space-y-3">
-                                                                <FormLabel className="flex items-center gap-2 text-[#475569] font-bold">
-                                                                    <Clock size={14} className="text-[#769FCD]" />
-                                                                    Working Shift
-                                                                </FormLabel>
+                                                            <FormItem>
+                                                                <FormLabel className="text-[10px] font-black text-gray-700 uppercase tracking-widest ml-1">Working Shift</FormLabel>
                                                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                                     <FormControl>
-                                                                        <SelectTrigger className="h-12 border-white bg-white rounded-xl shadow-sm focus:ring-4 focus:ring-[#769FCD]/10 focus:border-[#769FCD] transition-all outline-none">
-                                                                            <SelectValue placeholder="Select work shift" />
+                                                                        <SelectTrigger className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg outline-none focus:ring-[5px] focus:ring-indigo-500/10 focus:border-indigo-600 h-11 text-sm font-semibold shadow-sm">
+                                                                            <SelectValue placeholder="Select shift" />
                                                                         </SelectTrigger>
                                                                     </FormControl>
-                                                                    <SelectContent className="rounded-xl border-[#B9D7EA] shadow-xl">
-                                                                        <SelectItem value="MORNING" className="rounded-lg py-3">Morning Shift (8 AM - 4 PM)</SelectItem>
-                                                                        <SelectItem value="EVENING" className="rounded-lg py-3">Evening Shift (4 PM - 12 AM)</SelectItem>
-                                                                        <SelectItem value="NIGHT" className="rounded-lg py-3">Night Shift (12 AM - 8 AM)</SelectItem>
+                                                                    <SelectContent className="rounded-lg border-gray-200 shadow-2xl overflow-hidden">
+                                                                        <SelectItem value="MORNING" className="font-bold py-3">Morning Shift</SelectItem>
+                                                                        <SelectItem value="EVENING" className="font-bold py-3">Evening Shift</SelectItem>
+                                                                        <SelectItem value="NIGHT" className="font-bold py-3">Night Shift</SelectItem>
                                                                     </SelectContent>
                                                                 </Select>
-                                                                <FormMessage />
+                                                                <FormMessage className="text-[10px] font-bold" />
                                                             </FormItem>
                                                         )}
                                                     />
                                                 </div>
                                             )}
-                                        </div>
-                                    </div>
-                                </div>
+                                        </form>
+                                    </Form>
+                                )}
+                            </div>
+                        </div>
 
-                                <div className="p-8 bg-[#D6E6F2] border-t border-[#B9D7EA] flex items-center justify-end gap-4 mt-auto">
-                                    <Button
+                        {/* Fixed Footer */}
+                        {!createdCredentials && (
+                            <div className="p-6 border-t border-gray-100/80 bg-white shrink-0">
+                                <div className="flex gap-3">
+                                    <button
                                         type="button"
-                                        variant="ghost"
-                                        className="h-12 px-6 rounded-xl text-[#64748B] hover:bg-slate-200/50"
                                         onClick={() => handleModalOpenChange(false)}
+                                        disabled={isSubmitting}
+                                        className="flex-1 px-4 py-3 bg-white border border-gray-200 text-gray-700 rounded-lg text-xs font-black hover:bg-gray-50 transition-all disabled:opacity-50 tracking-widest uppercase active:scale-[0.98] shadow-sm"
                                     >
                                         Cancel
-                                    </Button>
-                                    <Button
+                                    </button>
+                                    <button
                                         type="submit"
+                                        form="add-staff-form"
                                         disabled={isSubmitting}
-                                        className="h-12 px-8 rounded-xl bg-[#769FCD] hover:bg-[#608FBF] text-white font-bold shadow-lg shadow-[#769FCD]/10 min-w-[140px]"
+                                        className="flex-[1.5] px-4 py-3 bg-indigo-600 text-white rounded-lg text-xs font-black hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-indigo-600/20 tracking-widest uppercase active:scale-[0.98]"
                                     >
                                         {isSubmitting ? (
-                                            <div className="flex items-center gap-2">
-                                                <Loader2 className="animate-spin" size={18} />
-                                                <span>Registering...</span>
-                                            </div>
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin text-white/80" />
+                                                Processing...
+                                            </>
                                         ) : (
-                                            <span>Register User</span>
+                                            <>
+                                                {isEditMode ? <Check size={16} /> : <UserPlus size={16} />}
+                                                {isEditMode ? 'Save Changes' : 'Register Staff Member'}
+                                            </>
                                         )}
-                                    </Button>
+                                    </button>
                                 </div>
-                            </form>
-                        </Form>
-                    )}
+                            </div>
+                        )}
+                    </div>
                 </DialogContent>
             </Dialog>
 
             <AlertDialog open={isDiscardConfirmOpen} onOpenChange={setIsDiscardConfirmOpen}>
-                <AlertDialogContent className="rounded-2xl border-none shadow-2xl p-8">
+                <AlertDialogContent className="rounded-lg border-none shadow-2xl p-8">
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-xl font-bold text-[#1E293B]">Unsaved Changes</AlertDialogTitle>
                         <AlertDialogDescription className="text-[#64748B]">
@@ -531,11 +589,11 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({ onSuccess, trigger
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="mt-8 gap-3">
-                        <AlertDialogCancel className="h-11 px-6 rounded-xl border-[#B9D7EA] hover:bg-[#D6E6F2] font-semibold" onClick={() => setIsDiscardConfirmOpen(false)}>
+                        <AlertDialogCancel className="h-11 px-6 rounded-lg border-[#B9D7EA] hover:bg-[#D6E6F2] font-semibold" onClick={() => setIsDiscardConfirmOpen(false)}>
                             Keep Editing
                         </AlertDialogCancel>
                         <AlertDialogAction
-                            className="h-11 px-6 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold"
+                            className="h-11 px-6 rounded-lg bg-red-500 hover:bg-red-600 text-white font-bold"
                             onClick={() => {
                                 setIsDiscardConfirmOpen(false);
                                 resetForm();

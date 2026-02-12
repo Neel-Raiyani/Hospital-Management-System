@@ -24,7 +24,7 @@ export const createUserValidation = [
 
     body("role")
         .notEmpty().withMessage("Role is required")
-        .isIn(["DOCTOR", "LAB", "RECEPTIONIST"]).withMessage("Invalid Role!!!"),
+        .isIn(["DOCTOR", "LAB", "RECEPTIONIST", "ADMIN"]).withMessage("Invalid Role!!!"),
 
     body("doctorData").if(body("role").equals("DOCTOR")).notEmpty().withMessage("Doctor data is required"),
 
@@ -57,7 +57,7 @@ export const createUserValidation = [
     body("receptionistData.shift")
         .if((_, { req }) => req.body.role === "RECEPTIONIST" && req.body.receptionistData)
         .notEmpty().withMessage("Shift is required")
-        .isIn(["MORNING", "EVENING", "NIGHT"]) .withMessage("Shift must be in uppercase: MORNING, EVENING, or NIGHT"),
+        .isIn(["MORNING", "EVENING", "NIGHT"]).withMessage("Shift must be in uppercase: MORNING, EVENING, or NIGHT"),
 
     body("labStaffData").if(body("role").equals("LAB")).notEmpty().withMessage("Lab Staff data is required"),
 
@@ -68,7 +68,7 @@ export const createUserValidation = [
     body("labStaffData.shift")
         .if((_, { req }) => req.body.role === "LAB" && req.body.labStaffData)
         .notEmpty().withMessage("Shift is required")
-        .isIn(["MORNING", "EVENING", "NIGHT"]) .withMessage("Shift must be in uppercase: MORNING, EVENING, or NIGHT")
+        .isIn(["MORNING", "EVENING", "NIGHT"]).withMessage("Shift must be in uppercase: MORNING, EVENING, or NIGHT")
 ]
 
 export const loginValidation = [
@@ -85,6 +85,20 @@ export const changePasswordValidation = [
         .notEmpty().withMessage("Old Password is required").isLength({ min: 6 })
         .withMessage("Password must be of minimum length 6")
         .isLength({ max: 8 }).withMessage("Password must be of maximum length 8"),
+    body("newPassword")
+        .notEmpty().withMessage("New Password is required")
+        .isLength({ min: 6 }).withMessage("Password must be of minimum length 6")
+        .isLength({ max: 8 }).withMessage("Password must be of maximum length 8")
+]
+
+export const forgotPasswordValidation = [
+    body("email")
+        .isEmail().withMessage("Valid email is required"),
+]
+
+export const resetPasswordValidation = [
+    body("token")
+        .notEmpty().withMessage("Reset token is required"),
     body("newPassword")
         .notEmpty().withMessage("New Password is required")
         .isLength({ min: 6 }).withMessage("Password must be of minimum length 6")

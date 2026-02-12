@@ -1,34 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    Shield, Clock, Lock,
-    KeyRound, Eye, EyeOff, CheckCircle,
-    User as UserIcon, AlertCircle, ArrowLeft
+    Lock, KeyRound, CheckCircle, Mail, ArrowLeft,
+    Stethoscope, Phone, Calendar, Clock, Award,
+    Briefcase, CreditCard, AlertCircle, Pencil,
+    ShieldCheck
 } from 'lucide-react';
+import { motion, type Variants } from 'framer-motion';
 import { Loader } from '../components/ui/Loader';
-import {
-    Dialog, DialogContent, DialogHeader,
-    DialogTitle, DialogDescription, DialogTrigger
-} from '../components/ui/Dialog';
+import { Dialog, DialogContent, DialogTrigger } from '../components/ui/Dialog';
 import { authService, type StaffUser } from '../api/auth.service';
 import { formatDoctorName } from '../utils/nameUtils';
 import { useAuth } from '../hooks/useAuth';
-import { Button } from '../components/ui/Button';
-import { Card, CardContent } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
-import { Badge } from '../components/ui/Badge';
-import { Toast, useToast } from '../components/ui/Toast';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/Tabs';
+import { toast } from 'react-hot-toast';
+import { cn } from '../utils/cn';
+import { AddUserDialog } from '../components/features/admin/AddUserDialog';
 
+// ============================================================================
+// PROFILE PAGE — Modern, Clean, Professional
+// ============================================================================
 const Profile: React.FC = () => {
     const { userId } = useParams<{ userId?: string }>();
     const { user: currentUser } = useAuth();
     const navigate = useNavigate();
-    const { toast, showToast, hideToast } = useToast();
 
     const [userData, setUserData] = useState<StaffUser | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Edit dialog state
+    const [isEditOpen, setIsEditOpen] = useState(false);
 
     // Password state
     const [passwordData, setPasswordData] = useState({
@@ -36,29 +38,48 @@ const Profile: React.FC = () => {
         newPassword: '',
         confirmPassword: ''
     });
-    const [showPasswords, setShowPasswords] = useState(false);
     const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
     const [updatingPassword, setUpdatingPassword] = useState(false);
     const [passwordError, setPasswordError] = useState<string | null>(null);
 
     const isOwnProfile = !userId || userId === currentUser?.id;
+    const isAdmin = currentUser?.role === 'ADMIN';
+
+    // Smooth stagger animations
+    const containerVariants: Variants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: { staggerChildren: 0.06, delayChildren: 0.08 }
+        }
+    };
+
+    const itemVariants: Variants = {
+        hidden: { opacity: 0, y: 14, scale: 0.98 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            transition: { type: "spring", stiffness: 120, damping: 22, mass: 0.8 }
+        }
+    };
+
+    const fetchProfile = async (quiet = false) => {
+        try {
+            if (!quiet) setLoading(true);
+            const data = await authService.getUserProfile(userId);
+            setUserData(data);
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to load profile');
+            toast.error(err.response?.data?.message || 'Failed to load profile');
+        } finally {
+            if (!quiet) setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchProfile = async () => {
-            try {
-                setLoading(true);
-                const data = await authService.getUserProfile(userId);
-                setUserData(data);
-            } catch (err: any) {
-                setError(err.response?.data?.message || 'Failed to load profile');
-                showToast(err.response?.data?.message || 'Failed to load profile', 'error');
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchProfile();
-    }, [userId, showToast]);
+    }, [userId]);
 
     const handlePasswordChange = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -68,7 +89,6 @@ const Profile: React.FC = () => {
             setPasswordError('New passwords do not match');
             return;
         }
-
         if (passwordData.newPassword.length < 6) {
             setPasswordError('Password must be at least 6 characters');
             return;
@@ -80,301 +100,154 @@ const Profile: React.FC = () => {
                 oldPassword: passwordData.currentPassword,
                 newPassword: passwordData.newPassword
             });
-            showToast('Password updated successfully', 'success');
-            setPasswordData({
-                currentPassword: '',
-                newPassword: '',
-                confirmPassword: ''
-            });
+            toast.success('Password updated successfully');
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
             setIsPasswordDialogOpen(false);
         } catch (err: any) {
             const msg = err.response?.data?.message || 'Failed to update password';
             setPasswordError(msg);
-            showToast(msg, 'error');
+            toast.error(msg);
         } finally {
             setUpdatingPassword(false);
         }
     };
 
+    // ── Loading State ──
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] w-full">
-                <Loader
-                    size="md"
-                    variant={currentUser?.role === 'RECEPTIONIST' ? 'teal' : 'blue'}
-                    text="Loading..."
-                />
+            <div className="h-[calc(100vh-100px)] flex items-center justify-center">
+                <Loader size="lg" variant="indigo" text="Loading Profile..." />
             </div>
         );
     }
 
+    // ── Error State ──
     if (error || !userData) {
         return (
-            <div className="max-w-md mx-auto mt-20 text-center p-8 bg-white rounded-3xl shadow-sm border border-gray-100">
-                <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Shield size={32} />
-                </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Access Restricted</h2>
-                <p className="text-gray-500 mb-6">{error || "The profile could not be loaded."}</p>
-                <Button onClick={() => window.history.back()} variant="outline" className="rounded-xl">
-                    Return to Dashboard
-                </Button>
+            <div className="h-[calc(100vh-100px)] flex items-center justify-center p-6">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="max-w-sm w-full bg-white rounded-lg shadow-sm border border-gray-100 p-8 text-center"
+                >
+                    <div className="w-14 h-14 bg-rose-50 text-rose-500 rounded-lg flex items-center justify-center mx-auto mb-4 border border-rose-100">
+                        <AlertCircle size={28} />
+                    </div>
+                    <h2 className="text-lg font-bold text-gray-900 mb-2">Profile Not Found</h2>
+                    <p className="text-sm text-gray-500 mb-6">{error || "Could not load this profile."}</p>
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="w-full h-11 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-50 transition-all active:scale-[0.98]"
+                    >
+                        Go Back
+                    </button>
+                </motion.div>
             </div>
         );
     }
 
-    const isReceptionist = userData.role === 'RECEPTIONIST';
-    const isDoctor = userData.role === 'DOCTOR';
-    const isAdmin = userData.role === 'ADMIN';
-
     const initials = userData.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+    const isDoctor = userData.role === 'DOCTOR';
 
-    const getRoleColor = (role: string) => {
-        switch (role) {
-            case 'ADMIN': return 'bg-[#1e293b] text-white border-[#B9D7EA] shadow-sm';
-            case 'DOCTOR': return 'bg-[#F7FBFC] text-[#769FCD] border-[#B9D7EA]';
-            case 'RECEPTIONIST': return 'bg-teal-50 text-teal-700 border-teal-100 shadow-sm shadow-teal-600/5';
-            case 'LAB': return 'bg-[#EEF2FF] text-[#818CF8] border-[#B9D7EA]';
-            default: return 'bg-[#F7FBFC] text-[#64748B] border-[#B9D7EA]';
+    // Build info fields based on role
+    const infoFields: { label: string; value: string; icon: any }[] = [
+        { label: 'Email', value: userData.email, icon: Mail },
+        { label: 'Phone', value: userData.phone || 'Not provided', icon: Phone },
+        {
+            label: 'Joined',
+            value: new Date(userData.createdAt).toLocaleDateString(undefined, {
+                year: 'numeric', month: 'long', day: 'numeric'
+            }),
+            icon: Calendar
+        },
+        { label: 'Status', value: userData.status === 'ACTIVE' ? 'Active' : 'Inactive', icon: ShieldCheck },
+    ];
+
+    // Doctor-specific fields
+    const doctorFields: { label: string; value: string; icon: any }[] = isDoctor ? [
+        { label: 'Specialization', value: userData.specialization || 'General', icon: Stethoscope },
+        { label: 'Qualification', value: userData.qualification || 'Not specified', icon: Award },
+        { label: 'Experience', value: userData.experienceYears ? `${userData.experienceYears} years` : 'Not specified', icon: Briefcase },
+        { label: 'Checkup Fee', value: userData.checkupFee ? `₹${userData.checkupFee}` : 'Not set', icon: CreditCard },
+        { label: 'OPD Start', value: userData.opdStartTime || 'Not set', icon: Clock },
+        { label: 'OPD End', value: userData.opdEndTime || 'Not set', icon: Clock },
+    ] : [];
+
+    // Receptionist/Lab fields
+    const staffFields: { label: string; value: string; icon: any }[] = !isDoctor && userData.role !== 'ADMIN' ? [
+        { label: 'Shift', value: userData.shift || 'Not assigned', icon: Clock },
+    ] : [];
+
+    const allFields = [...infoFields, ...doctorFields, ...staffFields];
+
+    const getRoleBadgeStyle = () => {
+        switch (userData.role) {
+            case 'DOCTOR': return 'bg-indigo-50 text-indigo-700 border-indigo-100';
+            case 'RECEPTIONIST': return 'bg-gray-50 text-gray-700 border-gray-200';
+            case 'LAB': return 'bg-violet-50 text-violet-700 border-violet-100';
+            case 'ADMIN': return 'bg-slate-50 text-slate-700 border-slate-200';
+            default: return 'bg-gray-50 text-gray-700 border-gray-200';
         }
     };
 
     return (
-        <div className="px-8 pb-8 pt-4 max-w-[1600px] mx-auto space-y-6 animate-in fade-in duration-500 overflow-hidden">
-            {/* Back Navigation */}
-            <div className="flex items-center">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate(-1)}
-                    className={`group flex items-center gap-2 rounded-xl px-4 py-2 transition-all ${isReceptionist ? 'text-teal-600 hover:text-teal-700 hover:bg-teal-50' : 'text-[#64748B] hover:text-[#27374D] hover:bg-[#D6E6F2]'
-                        }`}
-                >
-                    <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
-                    <span className="font-bold text-xs uppercase tracking-widest">Go Back</span>
-                </Button>
-            </div>
-
-            {/* Minimal Header */}
-            <header className={`bg-white border rounded-2xl p-6 shadow-sm flex items-center gap-6 ${isReceptionist ? 'border-teal-100/50 shadow-teal-600/5' : 'border-[#B9D7EA]'
-                }`}>
-                <div
-                    className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-bold text-white shadow-md shrink-0"
-                    style={{
-                        backgroundColor: isAdmin ? '#1e293b' :
-                            isDoctor ? '#769FCD' :
-                                isReceptionist ? '#0d9488' : '#818CF8'
-                    }}
-                >
-                    {initials}
-                </div>
-                <div className="grow">
-                    <div className="flex items-center gap-3 mb-1">
-                        <h1 className="text-3xl font-extrabold text-[#111827] tracking-tight">
-                            {isDoctor ? formatDoctorName(userData.name) : userData.name}
-                        </h1>
-                        <Badge className={`${getRoleColor(userData.role)} px-2.5 py-1 font-extrabold text-[10px] tracking-wider rounded-lg border-none`}>
-                            {userData.role}
-                        </Badge>
-                    </div>
-                    <div className="flex items-center gap-6 text-xs text-[#64748B]">
-                        <span className="flex items-center gap-1.5 font-bold">
-                            <div className={`w-2 h-2 rounded-full ${isReceptionist ? 'bg-teal-500' : 'bg-[#10B981]'}`} /> Active Status
-                        </span>
-                        <span className="flex items-center gap-1.5 font-bold">
-                            <Clock size={14} className={isReceptionist ? 'text-teal-400' : 'text-[#94A3B8]'} />
-                            Joined: <span className="text-[#1E293B]">{new Date(userData.createdAt).toLocaleDateString()}</span>
-                        </span>
+        <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="h-[calc(100vh-100px)] flex flex-col px-6 py-4 max-w-[1200px] mx-auto overflow-hidden font-['Inter',sans-serif]"
+        >
+            {/* ── Header ── */}
+            <motion.div variants={itemVariants} className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="w-9 h-9 flex items-center justify-center rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-indigo-600 hover:border-indigo-200 transition-all active:scale-90 shadow-sm"
+                    >
+                        <ArrowLeft size={18} />
+                    </button>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Profile</h1>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                            {isOwnProfile ? 'Your account details' : `Viewing ${userData.name}'s profile`}
+                        </p>
                     </div>
                 </div>
-            </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                {/* Unified Information Section */}
-                <Card className={`shadow-sm rounded-2xl bg-white flex flex-col ${isOwnProfile ? 'md:col-span-8' : 'md:col-span-12'} ${isReceptionist ? 'border-teal-100' : 'border-[#B9D7EA]'
-                    }`}>
-                    <div className={`p-4 border-b flex items-center gap-2 rounded-t-2xl ${isReceptionist ? 'bg-teal-50/50 border-teal-100' : 'bg-[#F7FBFC] border-[#B9D7EA]'
-                        }`}>
-                        <UserIcon size={16} className={isReceptionist ? 'text-teal-600' : 'text-[#769FCD]'} />
-                        <h2 className="font-extrabold text-sm text-[#1E293B]">Profile Information</h2>
-                    </div>
-                    <CardContent className="p-0 flex-1 overflow-hidden">
-                        {userData && (
-                            <Tabs defaultValue="personal" className="w-full h-full flex flex-col">
-                                <div className={`px-6 pt-4 border-b ${isReceptionist ? 'bg-teal-50/20 border-teal-50' : 'bg-[#F7FBFC]/50 border-[#D6E6F2]'
-                                    }`}>
-                                    <TabsList className="gap-2 bg-transparent p-0 h-auto justify-start border-none">
-                                        <TabsTrigger
-                                            value="personal"
-                                            className={`data-[state=active]:bg-white data-[state=active]:shadow-sm border border-transparent px-4 py-2 rounded-t-xl text-xs font-extrabold transition-all ${isReceptionist ? 'data-[state=active]:border-teal-100 data-[state=active]:text-teal-600' : 'data-[state=active]:border-[#B9D7EA]'
-                                                }`}
-                                        >
-                                            <UserIcon size={14} className="mr-2 opacity-70" />
-                                            Personal Details
-                                        </TabsTrigger>
-                                        {(userData.role !== 'ADMIN' && (userData.specialization || userData.experienceYears || userData.opdStartTime || userData.shift)) && (
-                                            <TabsTrigger
-                                                value="professional"
-                                                className={`data-[state=active]:bg-white data-[state=active]:shadow-sm border border-transparent px-4 py-2 rounded-t-xl text-xs font-extrabold transition-all ${isReceptionist ? 'data-[state=active]:border-teal-100 data-[state=active]:text-teal-600' : 'data-[state=active]:border-[#B9D7EA]'
-                                                    }`}
-                                            >
-                                                <Shield size={14} className="mr-2 opacity-70" />
-                                                Professional Info
-                                            </TabsTrigger>
-                                        )}
-                                    </TabsList>
-                                </div>
-
-                                <div className="p-6 grow">
-                                    <TabsContent value="personal" className="m-0 focus-visible:ring-0">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            <div className="space-y-4">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[10px] font-extrabold text-[#64748B] uppercase tracking-wider">Email Address</label>
-                                                    <div className={`text-sm font-bold break-all p-3 rounded-xl border shadow-sm ${isReceptionist ? 'bg-gray-50 border-teal-50/50 text-teal-900' : 'bg-[#F7FBFC] border-[#F1F5F9] text-[#1E293B]'
-                                                        }`}>
-                                                        {userData.email}
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[10px] font-extrabold text-[#64748B] uppercase tracking-wider">Phone Number</label>
-                                                    <div className={`text-sm font-bold p-3 rounded-xl border shadow-sm ${isReceptionist ? 'bg-gray-50 border-teal-50/50 text-teal-900' : 'bg-[#F7FBFC] border-[#F1F5F9] text-[#1E293B]'
-                                                        }`}>
-                                                        {userData.phone || 'Not provided'}
-                                                    </div>
-                                                </div>
+                <div className="flex items-center gap-2">
+                    {isOwnProfile && (
+                        <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+                            <DialogTrigger asChild>
+                                <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-[0.97] shadow-sm">
+                                    <Lock size={14} />
+                                    Change Password
+                                </button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[420px] w-full max-h-[90vh] rounded-lg p-0 border-none shadow-2xl bg-transparent [&>button]:hidden flex flex-col">
+                                <div className="bg-white rounded-lg overflow-hidden flex flex-col h-full font-['Inter',sans-serif]">
+                                    {/* Fixed Header */}
+                                    <div className="p-6 border-b border-gray-100/80 bg-white shrink-0">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-sm">
+                                                <Lock className="w-5 h-5 text-indigo-600" />
                                             </div>
-                                            <div className={`flex flex-col items-center justify-center border-l border-dashed pl-8 ${isReceptionist ? 'border-teal-100/50' : 'border-[#B9D7EA]'
-                                                }`}>
-                                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 ${isReceptionist ? 'bg-teal-50 text-teal-600' : 'bg-[#F1F5F9] text-[#64748B]'
-                                                    }`}>
-                                                    <UserIcon size={28} opacity={0.3} />
-                                                </div>
-                                                <p className={`text-[10px] font-extrabold uppercase tracking-widest ${isReceptionist ? 'text-teal-600/70' : 'text-[#94A3B8]'}`}>Registered Account</p>
-                                                <p className="text-[11px] text-[#64748B] mt-1 italic text-center">Personal contact details of the staff member.</p>
+                                            <div>
+                                                <h3 className="text-lg font-bold text-gray-900 tracking-tight">Security Settings</h3>
+                                                <p className="text-xs text-gray-500 font-medium mt-0.5">Update your account password</p>
                                             </div>
                                         </div>
-                                    </TabsContent>
-
-                                    <TabsContent value="professional" className="m-0 focus-visible:ring-0 h-full">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-full">
-                                            {userData.role === 'DOCTOR' ? (
-                                                <div className="space-y-4">
-                                                    <div className="flex justify-between items-center p-3 bg-[#F7FBFC] rounded-xl border border-[#F1F5F9]">
-                                                        <span className="text-xs text-[#64748B] font-bold uppercase tracking-wide">Specialization</span>
-                                                        <Badge className="bg-[#769FCD] text-white hover:bg-[#769FCD] shadow-sm">
-                                                            {userData.specialization || 'General Practice'}
-                                                        </Badge>
-                                                    </div>
-                                                    <div className="flex justify-between items-center p-3 bg-[#F7FBFC] rounded-xl border border-[#F1F5F9]">
-                                                        <span className="text-xs text-[#64748B] font-bold uppercase tracking-wide">Work Experience</span>
-                                                        <span className="font-bold text-sm text-[#1E293B]">{userData.experienceYears || 0} Years</span>
-                                                    </div>
-                                                    <div className="p-4 bg-[#D6E6F2] rounded-2xl border border-[#DBEAFE] text-center shadow-sm">
-                                                        <div className="text-[9px] font-black text-[#769FCD] uppercase tracking-[0.2em] mb-2 opacity-70">OPD Consultation Hours</div>
-                                                        <div className="text-lg font-mono font-black text-[#1E40AF]">
-                                                            {userData.opdStartTime || '09:00'} — {userData.opdEndTime || '17:00'}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ) : (isReceptionist || userData.role === 'LAB') ? (
-                                                <div className="space-y-4">
-                                                    <div className={`flex justify-between items-center p-3 rounded-xl border ${isReceptionist ? 'bg-gray-50 border-teal-50/50' : 'bg-[#F7FBFC] border-[#F1F5F9]'
-                                                        }`}>
-                                                        <span className={`text-xs font-extrabold uppercase tracking-wide ${isReceptionist ? 'text-teal-700' : 'text-[#64748B]'}`}>Assigned Shift</span>
-                                                        <Badge className={`${isReceptionist ? 'bg-teal-600 hover:bg-teal-700 shadow-teal-600/10' : 'bg-[#10B981]'} text-white shadow-sm border-none`}>
-                                                            {userData.shift || 'General'}
-                                                        </Badge>
-                                                    </div>
-                                                    <div className={`p-4 rounded-2xl border flex items-center gap-4 ${isReceptionist ? 'bg-teal-50/30 border-teal-100/50' : 'bg-[#ECFDF5] border-[#D1FAE5]'
-                                                        }`}>
-                                                        <div className={`w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm ${isReceptionist ? 'text-teal-600 border border-teal-50' : 'text-[#10B981]'
-                                                            }`}>
-                                                            <Clock size={20} />
-                                                        </div>
-                                                        <div>
-                                                            <h4 className={`text-[11px] font-extrabold uppercase tracking-wider ${isReceptionist ? 'text-teal-800' : 'text-[#065F46]'}`}>Department Posting</h4>
-                                                            <p className={`text-xs font-bold ${isReceptionist ? 'text-teal-600/80' : 'text-[#047857]'}`}>
-                                                                Assigned to {userData.role === 'LAB' ? 'Diagnostic Unit' : 'Main Registration Desk'}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ) : null}
-
-                                            <div className={`flex flex-col items-center justify-center border-l border-dashed pl-8 ${isReceptionist ? 'border-teal-100/50' : 'border-[#B9D7EA]'
-                                                }`}>
-                                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 ${isReceptionist ? 'bg-teal-50 text-teal-600' : 'bg-[#F1F5F9] text-[#64748B]'
-                                                    }`}>
-                                                    <Shield size={28} opacity={0.3} />
-                                                </div>
-                                                <p className={`text-[10px] font-extrabold uppercase tracking-widest ${isReceptionist ? 'text-teal-600/70' : 'text-[#94A3B8]'}`}>Verified Role</p>
-                                                <p className="text-[11px] text-[#64748B] mt-1 text-center italic">Current professional credentials and active scheduling.</p>
-                                            </div>
-                                        </div>
-                                    </TabsContent>
-                                </div>
-                            </Tabs>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Account Security - Only visible to owner */}
-                {isOwnProfile && (
-                    <Card className={`md:col-span-4 shadow-sm rounded-2xl bg-white flex flex-col ${isReceptionist ? 'border-teal-100' : 'border-[#B9D7EA]'
-                        }`}>
-                        <div className={`p-4 border-b flex items-center gap-2 rounded-t-2xl ${isReceptionist ? 'bg-teal-50/50 border-teal-100' : 'bg-[#F7FBFC] border-[#B9D7EA]'
-                            }`}>
-                            <Shield size={16} className={isReceptionist ? 'text-teal-600' : 'text-[#769FCD]'} />
-                            <h2 className="font-extrabold text-sm text-[#1E293B]">Security</h2>
-                        </div>
-                        <CardContent className="p-6 flex flex-col items-center justify-center flex-1 text-center space-y-4">
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${isReceptionist ? 'bg-teal-50 text-teal-600' : 'bg-[#D6E6F2] text-[#769FCD]'
-                                }`}>
-                                <KeyRound size={24} />
-                            </div>
-                            <div className="space-y-1">
-                                <h3 className="font-extrabold text-xs text-[#1E293B]">Password Manager</h3>
-                                <p className="text-[10px] font-medium text-[#64748B] leading-relaxed">
-                                    Update your password regularly.
-                                </p>
-                            </div>
-
-                            <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-                                <DialogTrigger asChild>
-                                    <Button className={`w-full text-white font-extrabold h-10 rounded-xl shadow-md transition-all active:scale-[0.98] text-xs border-none ${isReceptionist ? 'bg-teal-600 hover:bg-teal-700 shadow-teal-600/20' : 'bg-[#769FCD] hover:bg-[#2563EB]'
-                                        }`}>
-                                        Update Password
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-[425px] rounded-2xl border-none shadow-2xl p-0 overflow-hidden">
-                                    <div className={`p-6 border-b ${isReceptionist ? 'bg-teal-50 border-teal-100' : 'bg-[#F7FBFC] border-[#B9D7EA]'}`}>
-                                        <DialogHeader>
-                                            <DialogTitle className={`text-xl font-bold ${isReceptionist ? 'text-teal-900' : 'text-[#1E293B]'}`}>Update Password</DialogTitle>
-                                            <DialogDescription className="text-xs font-medium text-[#64748B]">
-                                                Choose a secure password to protect your account access.
-                                            </DialogDescription>
-                                        </DialogHeader>
                                     </div>
-                                    <div className="p-6">
-                                        <form onSubmit={handlePasswordChange} className="space-y-5">
-                                            <div className="space-y-2">
-                                                <div className="flex justify-between items-center">
-                                                    <label className="text-[11px] font-bold text-[#475569] uppercase tracking-wider">Current Password</label>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setShowPasswords(!showPasswords)}
-                                                        className={`${isReceptionist ? 'text-teal-600 hover:bg-teal-50' : 'text-[#769FCD] hover:bg-[#D6E6F2]'} text-[10px] font-bold flex items-center gap-1 px-2 py-1 rounded-md transition-colors`}
-                                                    >
-                                                        {showPasswords ? <EyeOff size={12} /> : <Eye size={12} />}
-                                                        {showPasswords ? 'Hide' : 'Show'}
-                                                    </button>
-                                                </div>
-                                                <div className="relative">
-                                                    <Lock size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isReceptionist ? 'text-teal-400' : 'text-[#94A3B8]'}`} />
+
+                                    {/* Content area */}
+                                    <div className="flex-1 overflow-y-auto px-6 py-6 bg-gray-50/30">
+                                        <form id="password-form" onSubmit={handlePasswordChange} className="space-y-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[11px] font-bold text-gray-500 px-1 uppercase tracking-wider">Current Password</label>
+                                                <div className="relative group">
+                                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                                                     <Input
-                                                        type={showPasswords ? 'text' : 'password'}
-                                                        className={`pl-10 h-12 text-sm font-mono rounded-xl focus:ring-4 ${isReceptionist ? 'bg-gray-50 border-teal-100 focus:ring-teal-500/10' : 'bg-[#F7FBFC] border-[#B9D7EA] focus:ring-[#769FCD]/10'}`}
+                                                        type="password"
+                                                        className="h-11 pl-11 rounded-lg bg-white border-gray-200 text-sm font-medium focus:ring-2 focus:ring-indigo-600/10 transition-all"
                                                         placeholder="Enter current password"
                                                         value={passwordData.currentPassword}
                                                         onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
@@ -383,73 +256,203 @@ const Profile: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="space-y-4 pt-4 border-t border-[#F1F5F9]">
-                                                <div className="space-y-2">
-                                                    <label className="text-[11px] font-bold text-[#475569] uppercase tracking-wider">New Password</label>
-                                                    <div className="relative">
-                                                        <KeyRound size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isReceptionist ? 'text-teal-400' : 'text-[#94A3B8]'}`} />
-                                                        <Input
-                                                            type={showPasswords ? 'text' : 'password'}
-                                                            className={`pl-10 h-12 text-sm font-mono rounded-xl focus:ring-4 ${isReceptionist ? 'bg-gray-50 border-teal-100 focus:ring-teal-500/10' : 'bg-[#F7FBFC] border-[#B9D7EA] focus:ring-[#769FCD]/10'}`}
-                                                            placeholder="••••••••"
-                                                            value={passwordData.newPassword}
-                                                            onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                                                            required
-                                                        />
-                                                    </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[11px] font-bold text-gray-500 px-1 uppercase tracking-wider">New Password</label>
+                                                <div className="relative group">
+                                                    <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                                                    <Input
+                                                        type="password"
+                                                        className="h-11 pl-11 rounded-lg bg-white border-gray-200 text-sm font-medium focus:ring-2 focus:ring-indigo-500/10 transition-all"
+                                                        placeholder="Minimum 6 characters"
+                                                        value={passwordData.newPassword}
+                                                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                                                        required
+                                                    />
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[11px] font-bold text-[#475569] uppercase tracking-wider">Confirm New Password</label>
-                                                    <div className="relative">
-                                                        <CheckCircle size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isReceptionist ? 'text-teal-400' : 'text-[#94A3B8]'}`} />
-                                                        <Input
-                                                            type={showPasswords ? 'text' : 'password'}
-                                                            className={`pl-10 h-12 text-sm font-mono rounded-xl focus:ring-4 ${isReceptionist ? 'bg-gray-50 border-teal-100 focus:ring-teal-500/10' : 'bg-[#F7FBFC] border-[#B9D7EA] focus:ring-[#769FCD]/10'}`}
-                                                            placeholder="••••••••"
-                                                            value={passwordData.confirmPassword}
-                                                            onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                                                            required
-                                                        />
-                                                    </div>
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <label className="text-[11px] font-bold text-gray-500 px-1 uppercase tracking-wider">Confirm Password</label>
+                                                <div className="relative group">
+                                                    <CheckCircle className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                                                    <Input
+                                                        type="password"
+                                                        className="h-11 pl-11 rounded-lg bg-white border-gray-200 text-sm font-medium focus:ring-2 focus:ring-indigo-500/10 transition-all"
+                                                        placeholder="Repeat new password"
+                                                        value={passwordData.confirmPassword}
+                                                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                                                        required
+                                                    />
                                                 </div>
                                             </div>
 
                                             {passwordError && (
-                                                <div className="p-3 bg-red-50 text-red-600 text-[11px] font-bold rounded-xl border border-red-100 flex items-center gap-2 animate-in slide-in-from-top-1">
+                                                <div className="p-3 bg-rose-50 text-rose-600 text-[10px] font-bold rounded-lg border border-rose-100 flex items-center gap-2 uppercase tracking-wide">
                                                     <AlertCircle size={14} /> {passwordError}
                                                 </div>
                                             )}
-
-                                            <Button
-                                                type="submit"
-                                                disabled={updatingPassword}
-                                                className={`w-full text-white font-black h-12 rounded-xl mt-2 uppercase tracking-widest text-xs border-none shadow-lg transition-all active:scale-[0.98] ${isReceptionist ? 'bg-teal-600 hover:bg-teal-700 shadow-teal-600/20' : 'bg-[#769FCD] hover:bg-[#2563EB] shadow-[#769FCD]/20'}`}
-                                            >
-                                                {updatingPassword ? (
-                                                    <>
-                                                        <Loader size="sm" variant={isReceptionist ? 'teal' : 'blue'} className="mr-2" />
-                                                        Updating...
-                                                    </>
-                                                ) : (
-                                                    'Update Password'
-                                                )}
-                                            </Button>
                                         </form>
                                     </div>
-                                </DialogContent>
-                            </Dialog>
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
 
-            <Toast
-                message={toast.message}
-                type={toast.type}
-                isOpen={toast.isOpen}
-                onClose={hideToast}
-            />
-        </div>
+                                    {/* Fixed Footer */}
+                                    <div className="p-6 border-t border-gray-100/80 bg-white shrink-0">
+                                        <div className="flex gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsPasswordDialogOpen(false)}
+                                                className="flex-1 h-11 bg-white border border-gray-200 text-gray-700 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-gray-50 transition-all active:scale-[0.98] shadow-sm"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                form="password-form"
+                                                disabled={updatingPassword}
+                                                className="flex-1 h-11 bg-indigo-600 text-white rounded-lg text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-600/20 active:scale-[0.97] transition-all disabled:opacity-50 hover:bg-indigo-700"
+                                            >
+                                                {updatingPassword ? 'Updating...' : 'Update Password'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    )}
+
+                    {(isOwnProfile || isAdmin) && (
+                        <>
+                            <button
+                                onClick={() => setIsEditOpen(true)}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-lg shadow-indigo-600/20 active:scale-[0.97] transition-all hover:bg-indigo-700"
+                            >
+                                <Pencil size={14} />
+                                Edit Details
+                            </button>
+                            <AddUserDialog
+                                open={isEditOpen}
+                                onOpenChange={(open) => {
+                                    setIsEditOpen(open);
+                                }}
+                                userToEdit={userData as any}
+                                onSuccess={() => {
+                                    fetchProfile(true);
+                                    setIsEditOpen(false);
+                                }}
+                            />
+                        </>
+                    )}
+                </div>
+            </motion.div>
+
+            {/* ── Main Content — Scrollable ── */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
+                {/* ── Hero Card ── */}
+                <motion.div
+                    variants={itemVariants}
+                    className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden mb-5"
+                >
+                    <div className="relative">
+                        {/* Gradient banner */}
+                        <div className="h-28 bg-linear-to-br from-indigo-600 via-indigo-500 to-violet-500 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-20 -mt-20 blur-2xl" />
+                            <div className="absolute bottom-0 left-1/3 w-32 h-32 bg-white/5 rounded-full blur-xl" />
+                        </div>
+
+                        {/* Avatar overlapping banner */}
+                        <div className="absolute left-8 -bottom-10">
+                            <div className="w-20 h-20 rounded-lg bg-indigo-600 flex items-center justify-center text-2xl font-black text-white shadow-xl shadow-indigo-600/30 border-4 border-white">
+                                {initials}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="pt-14 pb-6 px-8 flex items-end justify-between">
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+                                {isDoctor ? formatDoctorName(userData.name) : userData.name}
+                            </h2>
+                            <p className="text-sm text-gray-500 mt-0.5">{userData.email}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className={cn(
+                                "text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg border",
+                                getRoleBadgeStyle()
+                            )}>
+                                {userData.role}
+                            </span>
+                            <span className={cn(
+                                "text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border",
+                                userData.status === 'ACTIVE'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                    : 'bg-rose-50 text-rose-700 border-rose-100'
+                            )}>
+                                {userData.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                    </div>
+                </motion.div>
+
+                {/* ── Details Grid ── */}
+                <motion.div variants={itemVariants}>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">
+                        {isDoctor ? 'Personal & Clinical Details' : 'Account Details'}
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {allFields.map((field, i) => {
+                            const Icon = field.icon;
+                            const isStatus = field.label === 'Status';
+                            return (
+                                <motion.div
+                                    key={field.label}
+                                    variants={itemVariants}
+                                    whileHover={{ y: -2 }}
+                                    className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition-all group"
+                                >
+                                    <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100 shrink-0 group-hover:bg-indigo-100 transition-colors">
+                                        <Icon size={18} />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{field.label}</p>
+                                        <p className={cn(
+                                            "text-sm font-semibold text-gray-900 truncate mt-0.5",
+                                            isStatus && userData.status === 'ACTIVE' && 'text-emerald-600',
+                                            isStatus && userData.status === 'INACTIVE' && 'text-rose-600',
+                                        )}>
+                                            {field.value}
+                                        </p>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+                </motion.div>
+
+                {/* ── OPD Hours Highlight (Doctor only) ── */}
+                {isDoctor && (userData.opdStartTime || userData.opdEndTime) && (
+                    <motion.div variants={itemVariants} className="mt-5">
+                        <div className="bg-linear-to-br from-indigo-600 to-violet-600 rounded-lg p-6 shadow-xl shadow-indigo-600/15 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+                            <div className="relative z-10 flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-1">OPD Hours</p>
+                                    <div className="text-3xl font-black text-white tracking-wider flex items-center gap-3">
+                                        {userData.opdStartTime || '—'}
+                                        <div className="h-0.5 w-6 bg-white/30 rounded-full" />
+                                        {userData.opdEndTime || '—'}
+                                    </div>
+                                </div>
+                                <div className="w-14 h-14 rounded-lg bg-white/15 backdrop-blur-sm flex items-center justify-center text-white border border-white/20">
+                                    <Clock size={28} />
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* Bottom spacer */}
+                <div className="h-4" />
+            </div>
+        </motion.div>
     );
 };
 

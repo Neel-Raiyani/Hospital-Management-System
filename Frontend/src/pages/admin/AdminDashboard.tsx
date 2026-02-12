@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
     Users, Stethoscope, FlaskConical, UserCog,
-    Calendar, Activity
+    Calendar, Activity, UserPlus, Download, RefreshCw
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell
@@ -11,11 +10,10 @@ import {
 import { adminService, type DashboardStats } from '../../api/admin.service';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Badge } from '../../components/ui/Badge';
 import { AddUserDialog } from '../../components/features/admin/AddUserDialog';
 import { Loader } from '../../components/ui/Loader';
 
-const COLORS = ['#769FCD', '#0EA5E9', '#818CF8', '#27374D'];
+const COLORS = ['#4F46E5', '#818CF8', '#C7D2FE', '#EEF2FF'];
 
 const AdminDashboard: React.FC = () => {
     const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -24,6 +22,7 @@ const AdminDashboard: React.FC = () => {
 
     const fetchStats = async () => {
         try {
+            setLoading(true);
             const data = await adminService.getDashboardStats();
             setStats(data);
         } catch (err: any) {
@@ -39,6 +38,7 @@ const AdminDashboard: React.FC = () => {
 
     const handleExport = () => {
         if (!stats) return;
+
         const csvContent = [
             ['Hospital Staff & Appointment Report', new Date().toLocaleString()],
             ['Total Users', stats.totalUsers],
@@ -65,175 +65,243 @@ const AdminDashboard: React.FC = () => {
         { name: 'Receptionists', value: stats?.receptionistCount || 0 },
     ].filter(item => item.value > 0);
 
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1
-            }
-        }
-    };
-
-    const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
-        show: { opacity: 1, y: 0 }
-    };
-
     return (
-        <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            className="px-8 pb-8 pt-2 max-w-[1600px] mx-auto space-y-8"
-        >
-            {/* Header Section */}
+        <div className="px-8 pb-8 pt-2 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
+            {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <motion.div variants={itemVariants}>
-                    <h1 className="text-3xl font-bold text-[#111827] tracking-tight">Hospital Analytics</h1>
-                    <p className="text-[#6B7280] mt-1 flex items-center gap-2">
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Hospital Analytics</h1>
+                    <p className="text-slate-500 mt-1 flex items-center gap-2">
                         <Calendar className="w-4 h-4" />
-                        {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                        {new Date().toLocaleDateString('en-GB', {
+                            weekday: 'long',
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric'
+                        })}
                     </p>
-                </motion.div>
-                <motion.div variants={itemVariants} className="flex gap-2">
-                    <Button variant="outline" className="hidden sm:flex" onClick={handleExport}>Export Report</Button>
-                    <AddUserDialog onSuccess={fetchStats} />
-                </motion.div>
+                </div>
+                <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm flex items-center gap-2.5">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                    <span className="text-sm font-medium text-gray-700">Live System</span>
+                </div>
             </div>
 
             {loading ? (
-                <div className="flex flex-col items-center justify-center min-h-[400px]">
-                    <Loader size="lg" text="Initializing Dashboard..." variant="blue" />
+                <div className="flex items-center justify-center min-h-[400px]">
+                    <Loader size="lg" text="Initializing Dashboard..." variant="indigo" />
                 </div>
             ) : error ? (
-                <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center">
-                    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
-                        <Activity className="w-8 h-8" />
-                    </div>
-                    <h2 className="text-xl font-bold text-gray-900 mb-2">Dashboard Error</h2>
-                    <p className="text-gray-500 max-w-md">{error}</p>
-                    <Button onClick={() => window.location.reload()} className="mt-6">
-                        Retry Loading
+                <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+                    <Activity className="w-8 h-8 text-red-500 mb-4" />
+                    <p className="text-gray-600 font-medium">{error}</p>
+                    <Button onClick={fetchStats} variant="outline" className="mt-4">
+                        <RefreshCw className="w-4 h-4 mr-2" /> Try Again
                     </Button>
                 </div>
             ) : (
                 <>
-                    {/* Stats Overview */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {[
-                            { label: 'Total Users', value: stats?.totalUsers || 0, icon: Users, color: '#27374D', trend: '+12%' },
-                            { label: 'Doctors', value: stats?.doctorCount || 0, icon: Stethoscope, color: '#769FCD', trend: '+12%' },
-                            { label: 'Receptionists', value: stats?.receptionistCount || 0, icon: UserCog, color: '#0EA5E9', trend: '-2%' },
-                            { label: 'Lab Staff', value: stats?.labStaffCount || 0, icon: FlaskConical, color: '#818CF8', trend: 'stable' },
-                        ].map((stat, idx) => (
-                            <motion.div key={idx} variants={itemVariants}>
-                                <Card className="hover:shadow-md transition-shadow">
-                                    <CardContent className="p-6">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="p-2 rounded-lg" style={{ backgroundColor: `${stat.color}15`, color: stat.color }}>
-                                                <stat.icon className="w-5 h-5" />
-                                            </div>
-                                            <Badge variant={stat.trend.startsWith('+') ? 'success' : stat.trend === 'stable' ? 'secondary' : 'destructive'} className="rounded-full">
-                                                {stat.trend}
-                                            </Badge>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-[#6B7280]">{stat.label}</p>
-                                            <h3 className="text-2xl font-bold text-[#111827] mt-1">{stat.value}</h3>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </motion.div>
-                        ))}
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all group">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-slate-500">Total Staff</p>
+                                    <p className="text-2xl font-bold text-slate-900 mt-1">{stats?.totalUsers || 0}</p>
+                                </div>
+                                <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center border border-indigo-100 transition-colors group-hover:bg-indigo-100">
+                                    <Users className="w-6 h-6 text-indigo-600" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all group">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-slate-500">Doctors</p>
+                                    <p className="text-2xl font-bold text-slate-900 mt-1">{stats?.doctorCount || 0}</p>
+                                </div>
+                                <div className="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center border border-emerald-100 transition-colors group-hover:bg-emerald-100">
+                                    <Stethoscope className="w-6 h-6 text-emerald-600" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all group">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-slate-500">Lab Staff</p>
+                                    <p className="text-2xl font-bold text-slate-900 mt-1">{stats?.labStaffCount || 0}</p>
+                                </div>
+                                <div className="w-12 h-12 bg-amber-50 rounded-lg flex items-center justify-center border border-amber-100 transition-colors group-hover:bg-amber-100">
+                                    <FlaskConical className="w-6 h-6 text-amber-600" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all group">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-slate-500">Receptionists</p>
+                                    <p className="text-2xl font-bold text-slate-900 mt-1">{stats?.receptionistCount || 0}</p>
+                                </div>
+                                <div className="w-12 h-12 bg-violet-50 rounded-lg flex items-center justify-center border border-violet-100 transition-colors group-hover:bg-violet-100">
+                                    <UserCog className="w-6 h-6 text-violet-600" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <AddUserDialog onSuccess={fetchStats} trigger={
+                            <button className="group bg-indigo-600 hover:bg-indigo-700 p-4 rounded-xl shadow-lg shadow-indigo-200/50 transition-all text-left w-full">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <UserPlus className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-semibold text-white">Add New User</h3>
+                                        <p className="text-xs text-indigo-100 mt-0.5">Register new staff member to the system</p>
+                                    </div>
+                                </div>
+                            </button>
+                        } />
+
+                        <button
+                            onClick={handleExport}
+                            className="group bg-white hover:bg-gray-50 p-4 rounded-xl shadow-sm border border-gray-100 transition-all text-left"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <Download className="w-5 h-5 text-indigo-600" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-semibold text-slate-900">Export Report</h3>
+                                    <p className="text-xs text-slate-500 mt-0.5">Download hospital analytics in CSV format</p>
+                                </div>
+                            </div>
+                        </button>
                     </div>
 
                     {/* Charts Grid */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Main Activity Chart */}
-                        <motion.div variants={itemVariants} className="lg:col-span-2">
-                            <Card className="h-full">
-                                <CardHeader>
-                                    <CardTitle>Clinic Activity</CardTitle>
-                                    <CardDescription>Daily appointments over the last 7 days</CardDescription>
+                        {/* Area Chart */}
+                        <div className="lg:col-span-2">
+                            <Card className="border-none shadow-md bg-white h-full">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-xl font-bold text-slate-900">Clinic Activity</CardTitle>
+                                    <CardDescription className="text-slate-500 font-medium capitalize">
+                                        Shows daily appointment volume to monitor hospital load
+                                    </CardDescription>
                                 </CardHeader>
-                                <CardContent className="pr-8">
-                                    <div className="h-[350px] w-full">
+                                <CardContent>
+                                    <div className="w-full h-[380px] mt-4">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <AreaChart data={stats?.appointmentsByDay || []}>
                                                 <defs>
                                                     <linearGradient id="colorApps" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="5%" stopColor="#769FCD" stopOpacity={0.3} />
-                                                        <stop offset="95%" stopColor="#769FCD" stopOpacity={0} />
+                                                        <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.1} />
+                                                        <stop offset="95%" stopColor="#4F46E5" stopOpacity={0} />
                                                     </linearGradient>
                                                 </defs>
                                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} dy={10} />
-                                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                                                <XAxis
+                                                    dataKey="name"
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    tick={{ fill: '#6B7280', fontSize: 12 }}
+                                                    dy={10}
+                                                />
+                                                <YAxis
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    tick={{ fill: '#6B7280', fontSize: 12 }}
+                                                />
                                                 <Tooltip
-                                                    contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #D6E6F2', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                                    labelStyle={{ color: '#1E293B', fontWeight: 'bold' }}
+                                                    contentStyle={{
+                                                        backgroundColor: '#fff',
+                                                        border: '1px solid #E5E7EB',
+                                                        borderRadius: '8px',
+                                                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                                                    }}
                                                 />
                                                 <Area
-                                                    name="Daily Appointments"
                                                     type="monotone"
                                                     dataKey="appointments"
-                                                    stroke="#769FCD"
+                                                    stroke="#4F46E5"
                                                     strokeWidth={3}
                                                     fillOpacity={1}
                                                     fill="url(#colorApps)"
-                                                    animationDuration={1500}
                                                 />
                                             </AreaChart>
                                         </ResponsiveContainer>
                                     </div>
                                 </CardContent>
                             </Card>
-                        </motion.div>
+                        </div>
 
-                        {/* Staff Distribution (Formerly role allocation) */}
-                        <motion.div variants={itemVariants}>
-                            <Card className="h-full">
-                                <CardHeader>
-                                    <CardTitle>Staff Distribution</CardTitle>
-                                    <CardDescription>Role allocation across the hospital</CardDescription>
+                        {/* Pie Chart */}
+                        <div>
+                            <Card className="border-none shadow-md bg-white h-full">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-xl font-bold text-slate-900">Staff Distribution</CardTitle>
+                                    <CardDescription className="text-slate-500 font-medium capitalize">
+                                        Visualizes the human resource allocation across departments
+                                    </CardDescription>
                                 </CardHeader>
-                                <CardContent className="flex flex-col items-center justify-center p-0 pb-8">
-                                    <div className="h-[250px] w-full mt-4">
+                                <CardContent>
+                                    <div className="w-full h-[260px] flex items-center justify-center">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <PieChart>
                                                 <Pie
                                                     data={distributionData}
+                                                    dataKey="value"
                                                     cx="50%"
                                                     cy="50%"
-                                                    innerRadius={60}
-                                                    outerRadius={80}
+                                                    innerRadius={70}
+                                                    outerRadius={90}
                                                     paddingAngle={5}
-                                                    dataKey="value"
                                                 >
-                                                    {distributionData.map((_entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                    {distributionData.map((_, index) => (
+                                                        <Cell
+                                                            key={`cell-${index}`}
+                                                            fill={COLORS[index % COLORS.length]}
+                                                            stroke="none"
+                                                        />
                                                     ))}
                                                 </Pie>
-                                                <Tooltip />
+                                                <Tooltip
+                                                    contentStyle={{
+                                                        backgroundColor: '#fff',
+                                                        border: '1px solid #E5E7EB',
+                                                        borderRadius: '8px'
+                                                    }}
+                                                />
                                             </PieChart>
                                         </ResponsiveContainer>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4 mt-4 px-6 w-full">
+                                    <div className="mt-4 space-y-2">
                                         {distributionData.map((item, index) => (
-                                            <div key={index} className="flex items-center gap-2">
-                                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                                                <span className="text-sm font-medium text-[#374151]">{item.name}</span>
+                                            <div key={item.name} className="flex items-center justify-between text-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <div
+                                                        className="w-3 h-3 rounded-full"
+                                                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                                                    />
+                                                    <span className="text-gray-600 font-medium">{item.name}</span>
+                                                </div>
+                                                <span className="text-gray-900 font-bold">{item.value}</span>
                                             </div>
                                         ))}
                                     </div>
                                 </CardContent>
                             </Card>
-                        </motion.div>
+                        </div>
                     </div>
                 </>
             )}
-        </motion.div>
+        </div>
     );
 };
 

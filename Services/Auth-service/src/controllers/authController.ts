@@ -3,6 +3,8 @@ import { hashPassword, comparePassword } from "@utils/password.js";
 import { generateToken } from "@utils/jwt.js";
 import prisma from "../prisma/client.js";
 import logger from "@utils/logger.js";
+import crypto from "crypto";
+import { sendPasswordResetEmail } from "@utils/mailer.js";
 
 export const createUser = async (req: Request, res: Response) => {
   try {
@@ -190,6 +192,7 @@ export const getUsers = async (req: Request, res: Response) => {
         select: {
           userId: true,
           specialization: true,
+          qualification: true,
           experienceYears: true,
           opdStartTime: true,
           opdEndTime: true,
@@ -232,6 +235,7 @@ export const getUsers = async (req: Request, res: Response) => {
         createdAt: user.createdAt,
         // Doctor fields
         specialization: doctor?.specialization ?? null,
+        qualification: doctor?.qualification ?? null,
         experienceYears: doctor?.experienceYears ?? null,
         opdStartTime: doctor?.opdStartTime ?? null,
         opdEndTime: doctor?.opdEndTime ?? null,
@@ -308,6 +312,91 @@ export const updateUserStatus = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to update user status" });
   }
 };
+
+export const updateUser = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { name, email, doctorData, receptionistData, labStaffData } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { id: userId } });
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Update Base User (only if name or email provided)
+      const userUpdateData: any = {};
+      if (name !== undefined) userUpdateData.name = name;
+      if (email !== undefined) userUpdateData.email = email;
+
+      if (Object.keys(userUpdateData).length > 0) {
+        await tx.user.update({
+          where: { id: userId },
+          data: userUpdateData,
+        });
+      }
+
+      // 2. Update Role Specific Data
+      if (existingUser.role === "DOCTOR" && doctorData) {
+        const doctorUpdateData: any = {};
+        if (name !== undefined) doctorUpdateData.name = name;
+        if (doctorData.specialization !== undefined) doctorUpdateData.specialization = doctorData.specialization;
+        if (doctorData.qualification !== undefined) doctorUpdateData.qualification = doctorData.qualification;
+        if (doctorData.experienceYears !== undefined) doctorUpdateData.experienceYears = doctorData.experienceYears;
+        if (doctorData.opdStartTime !== undefined) doctorUpdateData.opdStartTime = doctorData.opdStartTime;
+        if (doctorData.opdEndTime !== undefined) doctorUpdateData.opdEndTime = doctorData.opdEndTime;
+        if (doctorData.checkupFee !== undefined) doctorUpdateData.checkupFee = doctorData.checkupFee;
+
+        const doctor = await tx.doctor.update({
+          where: { userId },
+          data: doctorUpdateData,
+        });
+
+        // Sync OPD schedule only if times were updated
+        if (doctorData.opdStartTime !== undefined || doctorData.opdEndTime !== undefined) {
+          const opdUpdateData: any = {};
+          if (doctorData.opdStartTime !== undefined) opdUpdateData.startTime = doctorData.opdStartTime;
+          if (doctorData.opdEndTime !== undefined) opdUpdateData.endTime = doctorData.opdEndTime;
+
+          await tx.oPD.update({
+            where: { doctorId: doctor.id },
+            data: opdUpdateData,
+          });
+        }
+      } else if (existingUser.role === "RECEPTIONIST" && receptionistData) {
+        const receptionistUpdateData: any = {};
+        if (name !== undefined) receptionistUpdateData.name = name;
+        if (receptionistData.phone !== undefined) receptionistUpdateData.phone = receptionistData.phone;
+        if (receptionistData.shift !== undefined) receptionistUpdateData.shift = receptionistData.shift;
+
+        await tx.receptionist.update({
+          where: { userId },
+          data: receptionistUpdateData,
+        });
+      } else if (existingUser.role === "LAB" && labStaffData) {
+        const labStaffUpdateData: any = {};
+        if (name !== undefined) labStaffUpdateData.name = name;
+        if (labStaffData.phone !== undefined) labStaffUpdateData.phone = labStaffData.phone;
+        if (labStaffData.shift !== undefined) labStaffUpdateData.shift = labStaffData.shift;
+
+        await tx.labStaff.update({
+          where: { userId },
+          data: labStaffUpdateData,
+        });
+      }
+    });
+
+    logger.info(`User updated successfully | userId=${userId} | role=${existingUser.role}`);
+    res.status(200).json({ message: "User profile updated successfully" });
+  } catch (error) {
+    logger.error(`Update user error | userId=${req.params?.userId ?? "unknown"} | error=${(error as Error).message}`);
+    res.status(500).json({ message: "Failed to update user profile" });
+  }
+};
 export const getUserProfile = async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId || req.user?.userId;
@@ -349,5 +438,74 @@ export const getUserProfile = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error(`Get user profile error | error=${(error as Error).message}`);
     res.status(500).json({ message: "Failed to fetch user profile" });
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found with this email" });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+
+    const tokenExpiry = new Date(Date.now() + 3600000);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: tokenExpiry,
+      },
+    });
+
+    await sendPasswordResetEmail(user.email, resetToken, user.name);
+
+    logger.info(`Forgot password email sent | email=${email}`);
+    res.status(200).json({ message: "Password reset link sent successfully to your email" });
+  } catch (error) {
+    logger.error(`Forgot password error | email=${req.body?.email ?? "unknown"} | error=${(error as Error).message}`);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await prisma.user.findFirst({
+      where: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: { gt: new Date() },
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired reset token" });
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+        isPasswordChanged: true,
+      },
+    });
+
+    logger.info(`Password reset successful | userId=${user.id}`);
+    res.status(200).json({ message: "Password reset successful. You can now login with your new password." });
+  } catch (error) {
+    logger.error(`Reset password error | error=${(error as Error).message}`);
+    res.status(500).json({ message: "Internal server error" });
   }
 };

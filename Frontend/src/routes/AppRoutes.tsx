@@ -3,7 +3,7 @@ import { ProtectedRoute } from '../components/ProtectedRoute.tsx';
 import Layout from '../components/layout/Layout.tsx';
 import AdminLayout from '../components/layout/AdminLayout.tsx';
 import { ReceptionistLayout } from '../components/layout/ReceptionistLayout.tsx';
-import { lazyWithLoader, PageLoader } from '../components/ui/PageTransition.tsx';
+import { lazyWithLoader } from '../components/ui/PageTransition.tsx';
 
 // Lazy load pages with transition wrapper
 const LoginPage = lazyWithLoader(() => import('../pages/LoginPage.tsx'));
@@ -21,6 +21,9 @@ const BookAppointment = lazyWithLoader(() => import('../pages/receptionist/BookA
 const DoctorDirectory = lazyWithLoader(() => import('../pages/receptionist/DoctorDirectory.tsx'));
 const AppointmentList = lazyWithLoader(() => import('../pages/AppointmentList.tsx'));
 const PatientList = lazyWithLoader(() => import('../pages/receptionist/PatientList.tsx'));
+const RevenueAnalytics = lazyWithLoader(() => import('../pages/admin/RevenueAnalytics.tsx'));
+const ForgotPasswordPage = lazyWithLoader(() => import('../pages/ForgotPassword.tsx'));
+const ResetPasswordPage = lazyWithLoader(() => import('../pages/ResetPassword.tsx'));
 
 import { useAuth } from '../context/AuthContext.tsx';
 
@@ -28,7 +31,7 @@ function ProfileRedirect() {
     const { user, isLoading } = useAuth();
 
     if (isLoading) {
-        return <PageLoader />;
+        return null;
     }
 
     if (user?.role === 'ADMIN') return <Navigate to="/admin/profile" replace />;
@@ -42,6 +45,8 @@ export function AppRoutes() {
         <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="/change-password-required" element={<ForcePasswordChange />} />
 
@@ -58,6 +63,7 @@ export function AppRoutes() {
                 <Route path="users" element={<StaffManagement />} />
                 <Route path="staff" element={<Navigate to="/admin/users" replace />} />
                 <Route path="settings" element={<Settings />} />
+                <Route path="revenue" element={<RevenueAnalytics />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="profile/:userId" element={<Profile />} />
                 <Route index element={<Navigate to="dashboard" replace />} />

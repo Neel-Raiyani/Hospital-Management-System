@@ -36,7 +36,7 @@ const patientSchema = z.object({
 type PatientFormData = z.infer<typeof patientSchema>;
 
 interface PatientRegistrationFormProps {
-    onSuccess: () => void;
+    onSuccess: (phone: string) => void;
     onCancel: () => void;
 }
 
@@ -76,7 +76,7 @@ const PatientRegistrationForm: React.FC<PatientRegistrationFormProps> = ({ onSuc
 
             await patientService.createPatient(formattedData);
             toast.success('Patient registered successfully!');
-            onSuccess();
+            onSuccess(data.phone);
         } catch (error: any) {
             console.error('Failed to register patient:', error);
             const responseData = error.response?.data;

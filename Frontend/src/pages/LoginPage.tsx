@@ -1,13 +1,23 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Shield, Loader2, User, Lock, AlertCircle, KeyRound } from 'lucide-react';
+import {
+    ShieldCheck,
+    Lock,
+    User,
+    ShieldAlert,
+    ChevronRight,
+    Activity,
+    Stethoscope,
+    Loader2
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth.ts';
 import { decodeToken } from '../utils/jwt.ts';
 
-// Login Validation Schema
+// ─── Login Validation Schema ────────────────────────────────────────────────
 const loginSchema = z.object({
     email: z.string()
         .min(1, 'Employee ID or Email is required')
@@ -27,7 +37,7 @@ const LoginPage: React.FC = () => {
     const [serverError, setServerError] = useState<string | null>(null);
 
     // Redirect if already authenticated
-    React.useEffect(() => {
+    useEffect(() => {
         if (isAuthenticated && user) {
             const dashboardMap: Record<string, string> = {
                 ADMIN: '/admin/dashboard',
@@ -79,308 +89,217 @@ const LoginPage: React.FC = () => {
     };
 
     return (
-        <div className="login-page">
-            {/* CSS-based abstract medical background */}
-            <style>{`
-                .login-page {
-                    min-height: 100vh;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 24px;
-                    font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
-                    background: 
-                        radial-gradient(circle at 20% 80%, rgba(0, 82, 204, 0.08) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 20%, rgba(0, 82, 204, 0.06) 0%, transparent 50%),
-                        radial-gradient(circle at 40% 40%, rgba(0, 82, 204, 0.04) 0%, transparent 30%),
-                        linear-gradient(180deg, #F8FAFC 0%, #EEF2F7 100%);
-                    position: relative;
-                    overflow: hidden;
-                }
-                .login-page::before {
-                    content: '';
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background-image: 
-                        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5v10M25 10h10M30 45v10M25 50h10M5 30h10M10 25v10M45 30h10M50 25v10' stroke='%230052CC' stroke-opacity='0.04' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-                    pointer-events: none;
-                }
-                .login-card {
-                    width: 100%;
-                    max-width: 400px;
-                    background: #FFFFFF;
-                    border: 1px solid #DFE1E6;
-                    border-radius: 6px;
-                    box-shadow: 0 4px 12px rgba(9, 30, 66, 0.08), 0 0 1px rgba(9, 30, 66, 0.12);
-                    position: relative;
-                    z-index: 1;
-                }
-                .login-header {
-                    padding: 32px 32px 24px;
-                    text-align: center;
-                    border-bottom: 1px solid #EBECF0;
-                    background: linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 100%);
-                }
-                .shield-icon {
-                    width: 56px;
-                    height: 56px;
-                    background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%);
-                    border-radius: 12px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    margin: 0 auto 16px;
-                    box-shadow: 0 2px 8px rgba(0, 82, 204, 0.25);
-                }
-                .shield-icon svg {
-                    color: white;
-                }
-                .login-title {
-                    font-size: 20px;
-                    font-weight: 700;
-                    color: #172B4D;
-                    margin: 0 0 4px;
-                    letter-spacing: -0.3px;
-                }
-                .login-subtitle {
-                    font-size: 13px;
-                    color: #6B778C;
-                    margin: 0;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 6px;
-                }
-                .login-subtitle svg {
-                    width: 14px;
-                    height: 14px;
-                    color: #00875A;
-                }
-                .login-body {
-                    padding: 28px 32px 32px;
-                }
-                .error-banner {
-                    display: flex;
-                    align-items: flex-start;
-                    gap: 10px;
-                    padding: 12px;
-                    margin-bottom: 20px;
-                    background: #FFEBE6;
-                    border: 1px solid #FF8F73;
-                    border-radius: 4px;
-                    font-size: 13px;
-                    color: #BF2600;
-                }
-                .error-banner svg {
-                    flex-shrink: 0;
-                    margin-top: 1px;
-                }
-                .form-group {
-                    margin-bottom: 20px;
-                }
-                .form-label {
-                    display: block;
-                    font-size: 12px;
-                    font-weight: 600;
-                    color: #172B4D;
-                    margin-bottom: 6px;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                }
-                .input-wrapper {
-                    position: relative;
-                }
-                .input-icon {
-                    position: absolute;
-                    left: 12px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    color: #6B778C;
-                    pointer-events: none;
-                }
-                .form-input {
-                    width: 100%;
-                    padding: 10px 12px 10px 40px;
-                    font-size: 14px;
-                    font-family: inherit;
-                    color: #172B4D;
-                    background: #FAFBFC;
-                    border: 1px solid #DFE1E6;
-                    border-radius: 4px;
-                    outline: none;
-                    transition: border-color 100ms, box-shadow 100ms;
-                }
-                .form-input:focus {
-                    background: #FFFFFF;
-                    border-color: #0052CC;
-                    box-shadow: 0 0 0 1px #0052CC;
-                }
-                .form-input.has-error {
-                    border-color: #DE350B;
-                }
-                .form-input.has-error:focus {
-                    box-shadow: 0 0 0 1px #DE350B;
-                }
-                .form-input::placeholder {
-                    color: #A5ADBA;
-                }
-                .form-input:disabled {
-                    background: #F4F5F7;
-                    color: #A5ADBA;
-                    cursor: not-allowed;
-                }
-                .form-error {
-                    font-size: 11px;
-                    color: #DE350B;
-                    margin-top: 4px;
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                }
-                .submit-btn {
-                    width: 100%;
-                    padding: 12px 16px;
-                    font-size: 14px;
-                    font-weight: 600;
-                    font-family: inherit;
-                    color: #FFFFFF;
-                    background: linear-gradient(180deg, #0052CC 0%, #0747A6 100%);
-                    border: none;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 8px;
-                    transition: opacity 100ms;
-                    box-shadow: 0 1px 2px rgba(7, 71, 166, 0.2);
-                }
-                .submit-btn:hover:not(:disabled) {
-                    opacity: 0.92;
-                }
-                .submit-btn:disabled {
-                    opacity: 0.6;
-                    cursor: not-allowed;
-                }
-                .submit-btn svg {
-                    width: 18px;
-                    height: 18px;
-                }
-                .login-footer {
-                    padding: 16px 32px;
-                    background: #FAFBFC;
-                    border-top: 1px solid #EBECF0;
-                    text-align: center;
-                }
-                .footer-text {
-                    font-size: 11px;
-                    color: #6B778C;
-                    margin: 0;
-                    line-height: 1.5;
-                }
-                .footer-text strong {
-                    color: #172B4D;
-                }
-                @keyframes spin {
-                    to { transform: rotate(360deg); }
-                }
-                .spinner {
-                    animation: spin 0.6s linear infinite;
-                }
-            `}</style>
+        <div className="min-h-screen flex bg-slate-50 font-['Inter',sans-serif]">
+            {/* ── Left Side: Brand & Visual ── */}
+            <div className="hidden lg:flex lg:w-1/2 relative bg-slate-950 overflow-hidden items-center justify-center p-12">
+                {/* Structural background elements (Solid, No Gradients) */}
+                <div className="absolute inset-0 opacity-[0.03]">
+                    <div className="h-full w-full border-b border-r border-slate-700" style={{ backgroundSize: '40px 40px', backgroundImage: 'linear-gradient(to right, #334155 1px, transparent 1px), linear-gradient(to bottom, #334155 1px, transparent 1px)' }} />
+                </div>
 
-            <div className="login-card">
-                {/* Header with Shield Icon */}
-                <div className="login-header">
-                    <div className="shield-icon">
-                        <Shield size={28} strokeWidth={2} />
+                {/* Role Harmony Accents (Solid Blocks) */}
+                <div className="absolute bottom-0 left-0 w-full h-1.5 flex">
+                    <div className="flex-1 bg-indigo-600" />
+                    <div className="flex-1 bg-teal-500" />
+                </div>
+
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 0.07, scale: 1 }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full flex items-center justify-center pointer-events-none"
+                >
+                    <Activity size={600} strokeWidth={0.5} className="text-white" />
+                </motion.div>
+
+                <div className="relative z-10 w-full max-w-lg">
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                    >
+                        <div className="flex items-center gap-4 mb-10">
+                            <div className="w-14 h-14 rounded-2xl bg-slate-900 flex items-center justify-center border border-slate-800 shadow-2xl">
+                                <Activity className="text-indigo-400 w-8 h-8" strokeWidth={2.5} />
+                            </div>
+                            <div>
+                                <h1 className="text-3xl font-black text-white tracking-tighter">Empyreal</h1>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="w-2 h-2 rounded-full bg-teal-500" />
+                                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Healthcare Solutions</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h2 className="text-5xl font-black text-white leading-[1.1] mb-8 tracking-tighter">
+                            Unified Portal for <br />
+                            <span className="text-indigo-500">Hospital Staff.</span>
+                        </h2>
+
+                        <p className="text-slate-400 text-lg leading-relaxed mb-12 max-w-md font-medium">
+                            A secure, private platform for Administrators, Doctors, and Receptionists to work together.
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-y-6 gap-x-8">
+                            {[
+                                { icon: ShieldCheck, text: "Enterprise Security", color: "text-indigo-400" },
+                                { icon: Lock, text: "Data Encryption", color: "text-indigo-400" },
+                                { icon: Activity, text: "Live Operations", color: "text-teal-500" },
+                                { icon: User, text: "Multi-Role Access", color: "text-teal-500" }
+                            ].map((item, idx) => (
+                                <motion.div
+                                    key={idx}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.5 + idx * 0.1 }}
+                                    className="flex items-center gap-3"
+                                >
+                                    <div className={`p-1.5 rounded-lg bg-slate-900 border border-slate-800 ${item.color}`}>
+                                        <item.icon size={16} strokeWidth={2.5} />
+                                    </div>
+                                    <span className="text-slate-300 font-bold text-xs uppercase tracking-wide">{item.text}</span>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </motion.div>
+                </div>
+            </div>
+
+            {/* ── Right Side: Login Form ── */}
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 relative bg-slate-50">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="w-full max-w-[420px] relative z-10"
+                >
+                    <div className="text-center lg:text-left mb-12">
+                        {/* Mobile Logo Only */}
+                        <div className="lg:hidden flex items-center justify-center mb-8">
+                            <div className="w-16 h-16 rounded-2xl bg-slate-950 flex items-center justify-center shadow-2xl border border-slate-800">
+                                <Activity className="text-indigo-500 w-9 h-9" strokeWidth={2.5} />
+                            </div>
+                        </div>
+
+                        <h3 className="text-3xl font-black text-slate-900 tracking-tighter mb-3">Staff Login</h3>
+                        <p className="text-slate-500 font-bold text-sm tracking-tight">Log in to your account</p>
                     </div>
-                    <h1 className="login-title">Hospital Staff Portal</h1>
-                    <p className="login-subtitle">
-                        <Lock size={14} />
-                        Secure Authentication Required
-                    </p>
-                </div>
 
-                {/* Form Body */}
-                <div className="login-body">
-                    {serverError && (
-                        <div className="error-banner">
-                            <AlertCircle size={16} />
-                            <span>{serverError}</span>
-                        </div>
-                    )}
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                        {/* Server Error Message */}
+                        <AnimatePresence>
+                            {serverError && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="overflow-hidden"
+                                >
+                                    <div className="bg-rose-50 border-2 border-rose-100 p-4 rounded-xl flex items-start gap-4">
+                                        <div className="bg-rose-500 p-1 rounded-md">
+                                            <ShieldAlert className="text-white w-4 h-4 shrink-0" />
+                                        </div>
+                                        <p className="text-sm font-bold text-rose-700 leading-tight">{serverError}</p>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
-                    <form onSubmit={handleSubmit(onSubmit)}>
-                        {/* Employee ID / Email Field */}
-                        <div className="form-group">
-                            <label className="form-label">Employee ID / Email</label>
-                            <div className="input-wrapper">
-                                <User size={18} className="input-icon" />
-                                <input
-                                    type="text"
-                                    {...register('email')}
-                                    disabled={isSubmitting}
-                                    className={`form-input ${errors.email ? 'has-error' : ''}`}
-                                    placeholder="Enter your ID or email"
-                                    autoComplete="username"
-                                />
+                        <div className="space-y-5">
+                            <div className="space-y-2.5">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                                    User ID or Email
+                                </label>
+                                <div className="relative group">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+                                        <User size={18} strokeWidth={3} />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        {...register('email')}
+                                        disabled={isSubmitting}
+                                        className={`w-full h-14 rounded-xl bg-white border-2 pl-12 pr-4 text-sm font-bold text-slate-900 transition-all outline-none shadow-sm
+                                            ${errors.email ? 'border-rose-200 focus:border-rose-500 ring-rose-500/10 focus:ring-4' : 'border-slate-100 group-hover:border-slate-200 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/5'}
+                                        `}
+                                        placeholder="Enter ID or email"
+                                        autoComplete="username"
+                                    />
+                                </div>
+                                {errors.email && (
+                                    <p className="text-[11px] font-black text-rose-500 px-1 uppercase tracking-wide">{errors.email.message}</p>
+                                )}
                             </div>
-                            {errors.email && (
-                                <p className="form-error">{errors.email.message}</p>
-                            )}
-                        </div>
 
-                        {/* Password Field */}
-                        <div className="form-group">
-                            <label className="form-label">Password</label>
-                            <div className="input-wrapper">
-                                <KeyRound size={18} className="input-icon" />
-                                <input
-                                    type="password"
-                                    {...register('password')}
-                                    disabled={isSubmitting}
-                                    className={`form-input ${errors.password ? 'has-error' : ''}`}
-                                    placeholder="••••••••"
-                                    autoComplete="current-password"
-                                />
+                            <div className="space-y-2.5">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+                                    Password
+                                </label>
+                                <div className="relative group">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors">
+                                        <Lock size={18} strokeWidth={3} />
+                                    </div>
+                                    <input
+                                        type="password"
+                                        {...register('password')}
+                                        disabled={isSubmitting}
+                                        className={`w-full h-14 rounded-xl bg-white border-2 pl-12 pr-4 text-sm font-bold text-slate-900 transition-all outline-none shadow-sm
+                                            ${errors.password ? 'border-rose-200 focus:border-rose-500 ring-rose-500/10 focus:ring-4' : 'border-slate-100 group-hover:border-slate-200 focus:border-teal-600 focus:ring-4 focus:ring-teal-600/5'}
+                                        `}
+                                        placeholder="Enter password"
+                                        autoComplete="current-password"
+                                    />
+                                </div>
+                                {errors.password && (
+                                    <p className="text-[11px] font-black text-rose-500 px-1 uppercase tracking-wide">{errors.password.message}</p>
+                                )}
                             </div>
-                            {errors.password && (
-                                <p className="form-error">{errors.password.message}</p>
-                            )}
                         </div>
 
-                        {/* Submit Button */}
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="submit-btn"
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <Loader2 className="spinner" />
-                                    <span>Authenticating...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Lock size={18} />
-                                    <span>Secure Sign In</span>
-                                </>
-                            )}
-                        </button>
+                        <div className="flex items-center justify-between px-1">
+                            <label className="flex items-center gap-3 cursor-pointer group">
+                                <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer transition-all" />
+                                <span className="text-xs font-black text-slate-400 group-hover:text-slate-600 transition-colors uppercase tracking-wider">Remember me</span>
+                            </label>
+                            <Link to="/forgot-password" title="Forgot Password" className="text-xs font-black text-slate-900 hover:text-indigo-600 transition-colors uppercase tracking-[0.1em]">
+                                Forgot password?
+                            </Link>
+                        </div>
+
+                        <div className="pt-2">
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full h-15 rounded-xl bg-slate-950 text-white font-black text-sm uppercase tracking-[0.2em] shadow-2xl shadow-slate-950/20 hover:bg-black active:scale-[0.98] transition-all flex items-center justify-center gap-4 disabled:opacity-70 disabled:cursor-not-allowed group border border-slate-800"
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
+                                        <span>Logging in...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>Login</span>
+                                        <div className="w-6 h-6 rounded-lg bg-indigo-600 flex items-center justify-center group-hover:translate-x-1 transition-transform">
+                                            <ChevronRight className="w-4 h-4 text-white" />
+                                        </div>
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </form>
-                </div>
 
-                {/* Footer */}
-                <div className="login-footer">
-                    <p className="footer-text">
-                        <strong>Authorized Personnel Only</strong><br />
-                        This system is for hospital staff use only. Unauthorized access is prohibited.
-                    </p>
-                </div>
+                    <div className="mt-16 pt-10 border-t border-slate-200 text-center">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 mb-4">
+                            <ShieldCheck size={12} className="text-slate-500" />
+                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Staff Only</span>
+                        </div>
+                        <p className="text-[11px] font-bold text-slate-400 leading-relaxed max-w-xs mx-auto uppercase tracking-tighter">
+                            Authorized access only. All actions are recorded for hospital security.
+                        </p>
+                    </div>
+                </motion.div>
             </div>
         </div>
     );

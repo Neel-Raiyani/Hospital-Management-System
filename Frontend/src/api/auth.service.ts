@@ -10,6 +10,7 @@ export interface StaffUser {
     createdAt: string;
     // Doctor fields
     specialization?: string | null;
+    qualification?: string | null;
     experienceYears?: number | null;
     opdStartTime?: string | null;
     opdEndTime?: string | null;
@@ -79,9 +80,23 @@ export const authService = {
         const response = await authApi.patch(`/auth/users/${userId}/status`, { isActive });
         return response.data;
     },
+    updateUser: async (userId: string, data: CreateUserRequest): Promise<{ message: string }> => {
+        const response = await authApi.patch(`/auth/users/${userId}`, data);
+        return response.data;
+    },
     getUserProfile: async (userId?: string): Promise<StaffUser> => {
         const url = userId ? `/auth/users/profile/${userId}` : '/auth/users/profile';
         const response = await authApi.get(url);
+        return response.data;
+    },
+
+    forgotPassword: async (email: string): Promise<{ message: string }> => {
+        const response = await authApi.post('/auth/forgot-password', { email });
+        return response.data;
+    },
+
+    resetPassword: async (data: { token: string; newPassword: string }): Promise<{ message: string }> => {
+        const response = await authApi.post('/auth/reset-password', data);
         return response.data;
     },
 };

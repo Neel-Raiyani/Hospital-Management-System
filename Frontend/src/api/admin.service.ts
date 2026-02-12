@@ -11,8 +11,9 @@ export interface DashboardStats {
     recentUsers: StaffUser[];
 }
 
-interface StaffUser {
+export interface StaffUser {
     id: string;
+    name: string;
     role: 'DOCTOR' | 'RECEPTIONIST' | 'LAB' | 'ADMIN';
     status: 'ACTIVE' | 'INACTIVE';
     createdAt: string;
@@ -20,17 +21,23 @@ interface StaffUser {
 
 export const adminService = {
     /**
+     * Fetch all users
+     */
+    getAllUsers: async (): Promise<StaffUser[]> => {
+        const response = await authApi.get<StaffUser[]>('/auth/users');
+        return response.data;
+    },
+
+    /**
      * Fetch statistics for the admin dashboard.
      * Counts users by role and processes appointment trends.
      */
     getDashboardStats: async (): Promise<DashboardStats> => {
         try {
-            const [usersResponse, appointments] = await Promise.all([
-                authApi.get<StaffUser[]>('/auth/users'),
+            const [users, appointments] = await Promise.all([
+                adminService.getAllUsers(),
                 appointmentService.getAppointments({ all: true })
             ]);
-
-            const users = usersResponse.data;
 
             const doctorCount = users.filter(u => u.role === 'DOCTOR').length;
             const receptionistCount = users.filter(u => u.role === 'RECEPTIONIST').length;

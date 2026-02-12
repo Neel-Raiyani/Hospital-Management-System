@@ -2,37 +2,54 @@ import { Suspense, lazy } from 'react';
 import type { ComponentType } from 'react';
 import { Loader } from './Loader';
 
-// Universal Page Loader Component
-export function PageLoader() {
-    // Attempt to get user role for correct color variant
-    const storedToken = localStorage.getItem('token');
-    let variant: 'teal' | 'blue' = 'blue';
-
-    if (storedToken) {
-        try {
-            // Simple check without full JWT decode to keep it fast
-            const payload = JSON.parse(atob(storedToken.split('.')[1]));
-            if (payload.role === 'RECEPTIONIST') variant = 'teal';
-        } catch (e) {
-            // Fallback to default
-        }
-    }
-
+// Content-level Loader — centers within its parent container
+export function ContentLoader({ text = "Loading..." }: { text?: string }) {
     return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] w-full animate-in fade-in duration-300">
-            <Loader size="md" variant={variant} />
+        <div
+            className="flex flex-col items-center justify-center w-full animate-in fade-in duration-500"
+            style={{
+                minHeight: 'calc(100vh - 120px)', // Centering in content area (viewport - header - some buffer)
+            }}
+        >
+            <Loader size="md" variant="indigo" text={text} />
         </div>
     );
 }
 
-// Page Transition Wrapper - wraps page content with smooth fade/slide animation
+// Global Loader — perfectly centered in the viewport, but intended for full-page states
+// Keeping it for cases where we DO want a full-screen overlay (like initial auth check)
+export function GlobalLoader({ text = "Loading..." }: { text?: string }) {
+    return (
+        <div
+            style={{
+                position: 'fixed',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 9999,
+            }}
+        >
+            <Loader size="md" variant="indigo" text={text} />
+        </div>
+    );
+}
+
+// Universal Page Loader for Suspense fallback
+export function PageLoader() {
+    return null;
+}
+
+// Page Transition Wrapper
 interface PageTransitionProps {
     children: React.ReactNode;
 }
 
 export function PageTransition({ children }: PageTransitionProps) {
     return (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out">
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
             {children}
         </div>
     );
@@ -66,4 +83,3 @@ export function lazyWithLoader<P extends object>(
         );
     };
 }
-

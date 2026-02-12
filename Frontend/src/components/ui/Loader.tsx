@@ -1,74 +1,101 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 interface LoaderProps {
-    size?: 'sm' | 'md' | 'lg' | 'xl';
+    size?: 'sm' | 'md' | 'lg';
     className?: string;
     text?: string;
-    variant?: 'teal' | 'blue';
+    variant?: 'teal' | 'blue' | 'indigo';
 }
 
 export const Loader: React.FC<LoaderProps> = ({
     size = 'md',
     className = '',
-    text,
-    variant = 'teal'
+    text = "Loading...",
+    variant = 'indigo'
 }) => {
-    const colorMap = {
-        teal: {
-            primary: 'border-t-teal-600',
-            secondary: 'border-b-teal-500/40',
-            tertiary: 'border-l-teal-400/30',
-            dot: 'bg-teal-600',
-            shadow: 'rgba(13,148,136,0.6)',
-            underlayer: 'teal-500/30'
-        },
-        blue: {
-            primary: 'border-t-[#769FCD]',
-            secondary: 'border-b-[#769FCD]/40',
-            tertiary: 'border-l-[#D6E6F2]/30',
-            dot: 'bg-[#769FCD]',
-            shadow: 'rgba(118,159,205,0.6)',
-            underlayer: '[#769FCD]/30'
-        }
+    // Professional Clinical Palette
+    const colors = {
+        indigo: { primary: '#4F46E5', track: '#EEF2FF', shadow: 'rgba(79, 70, 229, 0.1)' },
+        teal: { primary: '#0D9488', track: '#F0FDFA', shadow: 'rgba(13, 148, 136, 0.1)' },
+        blue: { primary: '#2563EB', track: '#EFF6FF', shadow: 'rgba(37, 99, 235, 0.1)' }
     };
 
-    const colors = colorMap[variant];
+    const theme = colors[variant as keyof typeof colors] || colors.indigo;
 
     const sizeMap = {
-        sm: { box: 'w-6 h-6', border: 'border-2', dot: 'w-1 h-1' },
-        md: { box: 'w-12 h-12', border: 'border-[2.5px]', dot: 'w-1.5 h-1.5' },
-        lg: { box: 'w-20 h-20', border: 'border-[3px]', dot: 'w-2.5 h-2.5' },
-        xl: { box: 'w-28 h-28', border: 'border-4', dot: 'w-4 h-4' }
+        sm: { dim: 24, iconSize: 16, font: 'text-[10px]' },
+        md: { dim: 48, iconSize: 32, font: 'text-[12px]' },
+        lg: { dim: 64, iconSize: 44, font: 'text-[14px]' },
     };
 
-    const config = sizeMap[size];
+    const { dim, iconSize, font } = sizeMap[size];
 
     return (
-        <div className={`inline-flex flex-col items-center justify-center ${className}`}>
-            <div className={`relative ${config.box}`}>
-                {/* Background Ring */}
-                <div className={`absolute inset-0 ${config.border} rounded-full border-gray-100/80`} />
+        <div className={`flex flex-col items-center justify-center gap-5 ${className}`}>
+            <div className="relative group" style={{ width: dim, height: dim }}>
+                {/* Background Shadow Pulse */}
+                <motion.div
+                    animate={{ scale: [1, 1.15, 1], opacity: [0.1, 0.2, 0.1] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute inset-0 rounded-full blur-xl"
+                    style={{ backgroundColor: theme.primary }}
+                />
 
-                {/* Primary Spining Arc */}
-                <div className={`absolute inset-0 ${config.border} rounded-full border-transparent ${colors.primary} animate-[spin_0.8s_linear_infinite]`} />
-
-                {/* Secondary Counter-Spinning Arc */}
-                <div className={`absolute inset-2 ${config.border} rounded-full border-transparent ${colors.secondary} animate-[spin_1.2s_linear_infinite_reverse]`} />
-
-                {/* Tertiary Small Accent Arc */}
-                <div className={`absolute inset-4 border-[1.5px] rounded-full border-transparent ${colors.tertiary} animate-[spin_2s_linear_infinite]`} />
-
-                {/* Center Glow Dot */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <div className={`${config.dot} ${colors.dot} rounded-full shadow-[0_0_12px_${colors.shadow}] animate-pulse`} />
+                <div className="relative z-10 w-full h-full flex items-center justify-center">
+                    <motion.div
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                        className="text-indigo-600"
+                        style={{ color: theme.primary }}
+                    >
+                        <svg
+                            width={iconSize}
+                            height={iconSize}
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            {/* Static Track Background */}
+                            <path
+                                d="M22 12h-4l-3 9L9 3l-3 9H2"
+                                className="opacity-20"
+                            />
+                            {/* Animated Heartbeat Path */}
+                            <motion.path
+                                d="M22 12h-4l-3 9L9 3l-3 9H2"
+                                initial={{ pathLength: 0, opacity: 0 }}
+                                animate={{
+                                    pathLength: [0, 1, 1],
+                                    opacity: [0, 1, 0],
+                                    pathOffset: [0, 0, 1]
+                                }}
+                                transition={{
+                                    duration: 2,
+                                    repeat: Infinity,
+                                    ease: "easeInOut",
+                                    times: [0, 0.5, 1]
+                                }}
+                            />
+                        </svg>
+                    </motion.div>
                 </div>
             </div>
+
             {text && (
-                <div className="mt-5 flex flex-col items-center">
-                    <p className={`font-black text-gray-500 uppercase tracking-[0.25em] ${size === 'sm' ? 'text-[8px]' : 'text-[11px]'}`}>
+                <div className="flex flex-col items-center gap-1.5">
+                    <span className={`${font} font-bold text-gray-400 uppercase tracking-[0.3em]`}>
                         {text}
-                    </p>
-                    <div className={`h-0.5 w-8 bg-linear-to-r from-transparent via-${colors.underlayer} to-transparent mt-1.5`} />
+                    </span>
+                    <motion.div
+                        animate={{ width: ['0%', '100%', '0%'] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        className="h-[1.5px] rounded-full opacity-40"
+                        style={{ backgroundColor: theme.primary }}
+                    />
                 </div>
             )}
         </div>

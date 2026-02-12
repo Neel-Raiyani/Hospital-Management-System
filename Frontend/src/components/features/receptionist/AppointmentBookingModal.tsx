@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, AlertCircle, User, Zap, AlertTriangle } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, User, Zap, AlertTriangle, Loader2 } from 'lucide-react';
 import { Loader } from '../../ui/Loader';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../ui/Dialog';
 import { Button } from '../../ui/Button';
@@ -350,10 +350,10 @@ const AppointmentBookingModal: React.FC<AppointmentBookingModalProps> = ({
                         className="flex-1 h-10 rounded-md font-medium bg-[#769FCD] hover:bg-[#5a8bbd] text-white disabled:opacity-50"
                     >
                         {loading ? (
-                            <>
-                                <Loader size="sm" variant="blue" />
-                                Booking...
-                            </>
+                            <div className="flex items-center justify-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span>Booking...</span>
+                            </div>
                         ) : (
                             <>
                                 <Calendar className="w-4 h-4 mr-2" />

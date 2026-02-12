@@ -3,7 +3,7 @@ import {
     Search, User, Calendar, Clock,
     ChevronRight, ChevronLeft, CheckCircle,
     Stethoscope,
-    Hash, Info, Check, Zap
+    Hash, Info, Check, Zap, Loader2
 } from 'lucide-react';
 import { Loader } from '../../components/ui/Loader';
 import { useNavigate } from 'react-router-dom';
@@ -664,7 +664,7 @@ const BookAppointment: React.FC = () => {
                                             >
                                                 {isBooking ? (
                                                     <div className="flex items-center gap-2">
-                                                        <Loader size="sm" />
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
                                                         <span>Booking...</span>
                                                     </div>
                                                 ) : (

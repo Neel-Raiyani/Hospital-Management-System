@@ -40,6 +40,8 @@ enum Gender {
   role       Role     
   isPasswordChanged    Boolean  @default(false)
   isActive  Boolean  @default(true)
+  resetPasswordToken    String?
+  resetPasswordExpires  DateTime?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
